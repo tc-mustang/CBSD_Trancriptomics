@@ -5,10 +5,10 @@ output: html_notebook
 
 ## DESCRIBING THE POPULATION:
 
-###LD score plot
+### LD score plot
 1) Make LD score plots for all chromosomes. It describes the Local LD and funny things happening on cassava
 
-  Calculate LD plots
+  Calculate LD scores
 ```{bash, eval=FALSE}
 
 # Plink files for the GBS_CBSD.vcf.gz on :
