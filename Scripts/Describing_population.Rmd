@@ -59,7 +59,7 @@ dev.off()
 
 
 
-###LD decay plot
+### LD decay plot
 2) Usual LD decay
 
 ```{r}
@@ -151,6 +151,7 @@ ld_genome
 ```
 
 ### PCA PLOT
+3) PCA coloring by the two different populations
 
 Using SNPRelate
 http://corearray.sourceforge.net/tutorials/SNPRelate/
@@ -220,6 +221,7 @@ dev.off()
 
 ### MAF Distribution
 
+4) Reference allele frequencies by population
 ```{r}
 
 GWASfrq <- read.delim("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Population_Description/GWAS", row.names = NULL, header = T)
