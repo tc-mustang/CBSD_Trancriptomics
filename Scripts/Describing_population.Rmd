@@ -1,6 +1,8 @@
 ---
 title: "R Notebook"
-output: html_notebook
+output:
+  html_document: default
+  html_notebook: default
 ---
 
 ## DESCRIBING THE POPULATION:
@@ -123,30 +125,6 @@ setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Population_Descrip
 tiff("LDdecay.tiff", width = 7.5, height = 7.5, units = 'in', res = 200)
 ld_genome
 dev.off()
-
-```
-
-```{r}
-
-ldnointro = ld %>%
-   sample_frac(.1) %>% ## Take a small, random subset because big data is big.
-   mutate(kb = (BP_B - BP_A) / 1000 ) %>% ## Get the distance between each marker pair in kilobases.
-   select(CHR_A, BP_A, BP_B, kb, R2) %>% ## Select only the useful columns.
-   filter( !(CHR_A %in% c(1,4)) ) %>% ## Remove uninteresting chromosomes.
-   mutate(CHR_A = recode(CHR_A, "2 = 'other'; 3 = 'other'; 5 = 'other'; 6 = 'other'; 7 = 'other'; 8 = 'other'; 9 = 'other'; 10 = 'other'; 11 = 'other'; 12 = 'other' ; 13 = 'other'; 14 = 'other'; 15 = 'other'; 16 = 'other'; 17 = 'other' ; 18 = 'other'")) %>% ## Recode chromosome names zzz.
-   mutate(mean_pos = ((BP_A + BP_B) /2) / 1e+06) %>%
-   rename(chromosome = CHR_A) %>%
-   arrange(chromosome, BP_A) %>% ## Sort.
-   mutate(logr2 = log(R2)) ## Transform r2 to make it comparable with data published by another group.
-
-ld_genome =
-  ggplot(ldnointro %>% select(chromosome, kb, R2), aes(kb, R2, colour = as.factor(chromosome))) + ## Select data, specify variables.
-  geom_point(size = 0.1, alpha = .1) +
-  stat_smooth(se = TRUE, colour = "blue") +
-  guides(colour = guide_legend(override.aes = list(alpha = 1))) +
-  guides(fill = guide_legend(keywidth = 3, keyheight = 1)) +
-  theme_bw()
-ld_genome
 
 ```
 
