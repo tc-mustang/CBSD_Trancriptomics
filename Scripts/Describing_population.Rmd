@@ -1,0 +1,276 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## DESCRIBING THE POPULATION:
+
+###LD score plot
+1) Make LD score plots for all chromosomes. It describes the Local LD and funny things happening on cassava
+
+  Calculate LD plots
+```{bash, eval=FALSE}
+
+# Plink files for the GBS_CBSD.vcf.gz on :
+# /home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/PLINK
+
+# Calculate LDscore for each SNP 
+
+gcta64 --bfile /home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/PLINK/plink --ld-score --ld-wind 1000 --ld-score-adj --out /home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/PLINK/CBDS_LDscore
+
+
+```
+
+  Make a plot 
+```{r, fig_height: 32, fig_width: 44}
+
+LDscore <- read.delim("/home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/PLINK/LDscore.ld", sep = " ")
+
+LDscore_r <- LDscore[,-(4:7)]
+mean_LD <- LDscore[,-c(4,6:8)]
+colnames(LDscore_r) <- c("SNP","CHR", "BP", "ldscore")
+colnames(mean_LD) <- c("SNP","CHR", "BP", "ldscore")
+
+library(qqman)
+manhattan(LDscore_r, p = "ldscore", logp = FALSE, ylab = "LDscore", genomewideline = FALSE, col = c("dodgerblue4", "forestgreen"), cex=0.3,
+    suggestiveline = FALSE, main = "LDscores")
+
+
+library(wesanderson)
+wes <- wes_palette("Zissou")
+
+
+LDplot <- manhattan(mean_LD, p = "ldscore", logp = FALSE, ylab = "Mean LDscore", genomewideline = FALSE, col = c(wes[1], wes[4]), cex=0.2,
+    suggestiveline = FALSE, main = "LDscores")
+
+```
+
+```{r}
+#saving the image 
+
+setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Population_Description/" )
+tiff("LDscore.tiff", width = 8.5, height = 4, units = 'in', res = 200)
+manhattan(mean_LD, p = "ldscore", logp = FALSE, ylab = "mean LDscore", genomewideline = FALSE, col = c(wes[1], wes[4]), cex=0.2,
+    suggestiveline = FALSE, main = "LDscores") # Make plot
+dev.off()
+
+
+```
+
+
+
+###LD decay plot
+2) Usual LD decay
+
+```{r}
+
+# Calculate the LD R2s using plink
+# plink --allow-no-sex --bfile plink --r2 --maf 0.01 --out plink_ld
+# This will generate a file named plink_ld.ld in :  /home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/PLINK
+
+library(tidyr) ## re-arranging data frames.
+library(dplyr) ## fast and simple coding.
+library(car) ## recoding character variables.
+library(ggplot2) ## fancy plots.
+
+
+theme_ld = function() {theme_bw(base_size = 10) +
+   theme(panel.grid.major = element_blank(),
+    #panel.grid.minor = element_blank(),
+    panel.border = element_rect(color = "grey", size = 0.5),
+    axis.line.x = element_line(size = .5, colour = "black"), 
+    axis.line.y = element_line(size = .5, colour = "black"), 
+    strip.background = element_rect(colour = "white", fill = "white"))}
+attr(theme_ld(), "complete")
+
+
+ld = read.table("/home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/PLINK/plink.ld", header = TRUE)
+
+```
+
+```{r}
+
+ldfinal = ld %>%
+  sample_frac(.1) %>% ## Take a small, random subset because big data is big.
+  mutate(kb = (BP_B - BP_A) / 1000 ) %>% ## Get the distance between each marker pair in kilobases.
+  select(CHR_A, BP_A, BP_B, kb, R2) %>% ## Select only the useful columns.
+  #filter(CHR_A %in% c(1,2,4) ) %>% ## Remove uninteresting chromosomes. 
+  mutate(CHR_A = recode(CHR_A, "2 = 'other'; 3 = 'other'; 5 = 'other'; 6 = 'other'; 7 = 'other'; 8 = 'other'; 9 = 'other'; 10 = 'other'; 11 = 'other'; 12 = 'other' ; 13 = 'other'; 14 = 'other'; 15 = 'other'; 16 = 'other'; 17 = 'other' ; 18 = 'other'")) %>% ## Recode chromosome names zzz.
+  mutate(mean_pos = ((BP_A + BP_B) /2) / 1e+06) %>%
+  rename(chromosome = CHR_A) %>%
+  arrange(chromosome, BP_A) %>% ## Sort.
+  mutate(logr2 = log(R2)) ## Transform r2 to make it comparable with data published by another group.
+ 
+ld_genome =
+  ggplot(ldfinal %>% select(chromosome, kb, R2), aes(kb, R2, colour = as.factor(chromosome))) + ## Select data, specify variables.
+    scale_colour_manual(values = c(wes[3],wes[5], wes[1])) +
+    geom_point(size = 0.1, alpha = .1) +
+    stat_smooth(se = TRUE, size = 0.5, colour = "blue") +
+    guides(colour = guide_legend(override.aes = list(alpha = 1, size=5) , title = "Chromosome")) +
+    guides(fill = guide_legend(keywidth = 3, keyheight = 1)) +
+    theme_bw() +
+    theme(legend.position = "bottom") 
+    
+
+ld_genome
+
+```
+
+```{r}
+#saving the image 
+
+setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Population_Description/" )
+tiff("LDdecay.tiff", width = 7.5, height = 7.5, units = 'in', res = 200)
+ld_genome
+dev.off()
+
+```
+
+```{r}
+
+ldnointro = ld %>%
+   sample_frac(.1) %>% ## Take a small, random subset because big data is big.
+   mutate(kb = (BP_B - BP_A) / 1000 ) %>% ## Get the distance between each marker pair in kilobases.
+   select(CHR_A, BP_A, BP_B, kb, R2) %>% ## Select only the useful columns.
+   filter( !(CHR_A %in% c(1,4)) ) %>% ## Remove uninteresting chromosomes.
+   mutate(CHR_A = recode(CHR_A, "2 = 'other'; 3 = 'other'; 5 = 'other'; 6 = 'other'; 7 = 'other'; 8 = 'other'; 9 = 'other'; 10 = 'other'; 11 = 'other'; 12 = 'other' ; 13 = 'other'; 14 = 'other'; 15 = 'other'; 16 = 'other'; 17 = 'other' ; 18 = 'other'")) %>% ## Recode chromosome names zzz.
+   mutate(mean_pos = ((BP_A + BP_B) /2) / 1e+06) %>%
+   rename(chromosome = CHR_A) %>%
+   arrange(chromosome, BP_A) %>% ## Sort.
+   mutate(logr2 = log(R2)) ## Transform r2 to make it comparable with data published by another group.
+
+ld_genome =
+  ggplot(ldnointro %>% select(chromosome, kb, R2), aes(kb, R2, colour = as.factor(chromosome))) + ## Select data, specify variables.
+  geom_point(size = 0.1, alpha = .1) +
+  stat_smooth(se = TRUE, colour = "blue") +
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) +
+  guides(fill = guide_legend(keywidth = 3, keyheight = 1)) +
+  theme_bw()
+ld_genome
+
+```
+
+### PCA PLOT
+
+Using SNPRelate
+http://corearray.sourceforge.net/tutorials/SNPRelate/
+
+```{r}
+
+# source("http://bioconductor.org/biocLite.R")
+# biocLite("gdsfmt")
+# biocLite("SNPRelate")
+
+library(gdsfmt)
+library(SNPRelate)
+
+bed.fn <- "/home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/PLINK/plink.bed"
+fam.fn <- "/home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/PLINK/plink.fam"
+bim.fn <- "/home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/PLINK/plink.bim"
+
+snpgdsBED2GDS(bed.fn, fam.fn, bim.fn,out.gdsfn ="test.gds")
+snpgdsSummary("test.gds")
+
+genofile <- snpgdsOpen("test.gds")
+
+pca <- snpgdsPCA(genofile, num.thread=2)
+
+pc.percent <- pca$varprop*100
+head(round(pc.percent, 2))
+
+```
+
+
+```{r}
+
+tab <- data.frame(sample.id = pca$sample.id,
+    EV1 = pca$eigenvect[,1],    # the first eigenvector
+    EV2 = pca$eigenvect[,2],    # the second eigenvector
+    stringsAsFactors = FALSE)
+head(tab)
+
+tabcol = tab %>%
+  mutate(ID = substr(sample.id, 1, 4)) %>% ## Get the distance between each marker pair in kilobases.
+  mutate(ID = recode(ID, "'UG14' = 'GWAS'")) %>%
+  mutate(EV1 = round(EV1, 3), EV2 = round(EV2, 3)) %>%
+  mutate(ID = ifelse(ID == 'GWAS', wes[1], wes[3]))
+  
+plot(tabcol$EV1, tabcol$EV2, xlab="Eigenvector 1 (4.73%)", ylab="Eigenvector 2 (4.22%)", pch= 20, col=tabcol$ID)
+legend("bottomright", legend=c("GWAS", "Training"), pch=19, col=c(wes[1], wes[3]))
+  
+plot(tabcol$EV1, tabcol$EV2, xlab="Eigenvector 1 (4.73%)", ylab="Eigenvector 2 (4.22%)", pch= 20, col=tabcol$ID)
+legend("bottomright", legend=c("GWAS", "Training"), pch=19, col=c(wes[1], wes[3]))
+
+pcaplot <- plot(tabcol$EV1, tabcol$EV2, xlab="Eigenvector 1 (4.73%)", ylab="Eigenvector 2 (4.22%)", pch= 20, col=tabcol$ID) 
+           legend("bottomright", legend=c("GWAS", "Training"), pch=19, col=c(wes[1], wes[3]))
+
+```
+
+
+```{r}
+
+setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Population_Description/" )
+tiff("PCAplot.tiff", width = 5, height = 5, units = 'in', res = 200)
+plot(tabcol$EV1, tabcol$EV2, xlab="Eigenvector 1 (4.73%)", ylab="Eigenvector 2 (4.22%)", pch= 20, col=tabcol$ID) 
+legend("bottomright", legend=c("GWAS", "Training"), pch=19, col=c(wes[1], wes[3]))
+dev.off()
+
+```
+
+
+### MAF Distribution
+
+```{r}
+
+GWASfrq <- read.delim("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Population_Description/GWAS", row.names = NULL, header = T)
+
+GWASfrq <- GWASfrq %>%
+  select(N_CHR, GWAS) %>%    ## Select only the useful columns.
+  rename(FREQ = N_CHR, SET = GWAS) ## Rename the colnames
+
+
+TRAININGfrq <- read.delim("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Population_Description/TRAINING", row.names = NULL, header = T)
+
+Frq <- TRAININGfrq %>%
+  select(N_CHR, Training) %>%    ## Select only the useful columns.
+  rename(FREQ = N_CHR, SET = Training) %>% ## Rename the colnames
+  bind_rows(Frq, GWASfrq)
+
+
+frqgraph<- ggplot(Frq, aes(FREQ, fill = SET)) +
+   scale_fill_manual(values = c(wes[3], wes[1])) +
+   theme_bw() +
+   geom_density(alpha = 0.8) +
+   labs(x = "Reference Allele Frequency", y = "Density")
+
+ggplot(Frq, aes(FREQ, fill = SET)) +
+   scale_fill_manual(values = c(wes[3], wes[1])) +
+   theme_bw() +
+   theme(legend.position = "bottom") +
+   guides(fill = guide_legend(title = NULL)) +
+   geom_density(alpha = 0.8) +
+   labs(x = "Reference Allele Frequency", y = "Density")
+
+MAFplot <- ggplot(Frq, aes(FREQ, fill = SET)) +
+   scale_fill_manual(values = c(wes[3], wes[1])) +
+   theme_bw() +
+   theme(legend.position = "bottom") +
+   guides(fill = guide_legend(title = NULL)) +
+   geom_density(alpha = 0.8) +
+   labs(x = "Reference Allele Frequency", y = "Density")
+
+```
+
+```{r}
+
+setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Population_Description/" )
+tiff("MAFplot.tiff", width = 5, height = 5, units = 'in', res = 200)
+MAFplot
+dev.off()
+
+```
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
