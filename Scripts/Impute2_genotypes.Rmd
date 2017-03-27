@@ -1,0 +1,276 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+#IMPUTE2 GRAPHS
+
+## Concordance
+
+Load the file
+
+```{r, fig.height=7, fig.width=15}
+library(ggplot2)
+library(wesanderson)
+
+concord <- read.delim("/home/DB2/Imputation/IMPUTE2/RESULTS_C1/GRAPHS/concordance")
+
+concord1 <- concord[which(concord$Chromosome < 10),]
+concord2 <- concord[which(concord$Chromosome >= 10),]
+
+p <- ggplot(concord1, aes(x=Position, y=Concordance, group=Level, color=as.factor(Level)))
+p + geom_point(cex=0.5) + geom_line(cex=1.4) + facet_grid(. ~ Chromosome) + coord_fixed(ratio =25) + theme_bw() +
+  geom_hline(yintercept = 95) + scale_color_manual(values=c(wes_palette("Zissou")[4], wes_palette("Zissou")[1]))
+
+
+```
+
+```{r, fig.height=7, fig.width=15}
+
+
+p <- ggplot(concord2, aes(x=Position, y=Concordance, group=Level, color=as.factor(Level)))
+p + geom_point(cex=0.5) + geom_line(cex=1.4) + facet_grid(. ~ Chromosome) + coord_fixed(ratio =25) + theme_bw() +
+  geom_hline(yintercept = 95) + scale_color_manual(values=c(wes_palette("Zissou")[4], wes_palette("Zissou")[1]))
+```
+
+
+## MAF distribution
+
+```{r fig.height=7, fig.width=10}
+
+c1_info <- read.delim("/home/DB2/Imputation/IMPUTE2/RESULTS_C1/GRAPHS/c1.info", header = F, sep = " ")
+c2_info <- read.delim("/home/DB2/Imputation/IMPUTE2/RESULTS_C1/GRAPHS/c2.info", header = F, sep = " ")
+c3_info <- read.delim("/home/DB2/Imputation/IMPUTE2/RESULTS_C1/GRAPHS/c3.info", header = F, sep = " ")
+c4_info <- read.delim("/home/DB2/Imputation/IMPUTE2/RESULTS_C1/GRAPHS/c4.info", header = F, sep = " ")
+c5_info <- read.delim("/home/DB2/Imputation/IMPUTE2/RESULTS_C1/GRAPHS/c5.info", header = F, sep = " ")
+c6_info <- read.delim("/home/DB2/Imputation/IMPUTE2/RESULTS_C1/GRAPHS/c6.info", header = F, sep = " ")
+
+
+library(wesanderson)
+wes_palette("Zissou")[2]
+
+par(mfrow=c(3,2))
+hist(c2_info[,6], main = "Chr 2", xlab = "",probability = T, ylim = c(0,6))
+hist(c3_info[,6], main = "Chr 3", xlab = "",probability = T, ylim = c(0,6))
+hist(c1_info[,6], main = "Chr 1", xlab = "", probability = T, ylim = c(0,6), col = wes_palette("Zissou")[2])
+hist(c4_info[,6], main = "Chr 4", xlab = "", probability = T, ylim = c(0,6), col = wes_palette("Zissou")[3])
+hist(c5_info[,6], main = "Chr 5", xlab = "Frequency of the reference allele", probability = T, ylim = c(0,6))
+hist(c6_info[,6], main = "Chr 6", xlab = "Frequency of the reference allele", probability = T, ylim = c(0,6))
+
+```
+
+
+## AR2 Distribution
+
+```{r}
+
+par(mfrow=c(3,2))
+hist(c2_info[,7], main = "Chr 2", xlab = "",probability = T, ylim = c(0,6))
+hist(c3_info[,7], main = "Chr 3", xlab = "",probability = T, ylim = c(0,6))
+hist(c1_info[,7], main = "Chr 1", xlab = "", probability = T, ylim = c(0,6), col = wes_palette("Zissou")[2])
+hist(c4_info[,7], main = "Chr 4", xlab = "", probability = T, ylim = c(0,6), col = wes_palette("Zissou")[3])
+hist(c5_info[,7], main = "Chr 5", xlab = "AR2 - info", probability = T, ylim = c(0,6))
+hist(c6_info[,7], main = "Chr 6", xlab = "AR2 - info", probability = T, ylim = c(0,6))
+
+```
+
+## AR2 by MAF
+
+```{r}
+
+lines1 <- matrix(0, nrow = 14, ncol = 3) 
+lines1 <- as.data.frame(lines1)
+colnames(lines1) <- c("Chromosome", "AR2", "Position")
+lines1$Chromosome <- rep(1, 14)
+lines1$Position <- c(0.02, 0.03, 0.04, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1)
+
+bymaf1 <- mean(c1_info[which(c1_info[,6] < 0.02), 7] )
+bymaf1 <- c(bymaf1, mean(c1_info[which(c1_info[,6] >= 0.02 & c1_info[,6]< 0.03 ), 7] ))
+bymaf1 <- c(bymaf1, mean(c1_info[which(c1_info[,6] >= 0.03 & c1_info[,6]< 0.04 ), 7] ))
+bymaf1 <- c(bymaf1, mean(c1_info[which(c1_info[,6] >= 0.04 & c1_info[,6]< 0.05 ), 7] ))
+bymaf1 <- c(bymaf1, mean(c1_info[which(c1_info[,6] >= 0.05 & c1_info[,6]< 0.1 ), 7] ))
+bymaf1 <- c(bymaf1, mean(c1_info[which(c1_info[,6] >= 0.1 & c1_info[,6]< 0.2 ), 7] ))
+bymaf1 <- c(bymaf1, mean(c1_info[which(c1_info[,6] >= 0.2 & c1_info[,6]< 0.3 ), 7] ))
+bymaf1 <- c(bymaf1, mean(c1_info[which(c1_info[,6] >= 0.3 & c1_info[,6]< 0.4 ), 7] ))
+bymaf1 <- c(bymaf1, mean(c1_info[which(c1_info[,6] >= 0.4 & c1_info[,6]< 0.5 ), 7] ))
+bymaf1 <- c(bymaf1, mean(c1_info[which(c1_info[,6] >= 0.5 & c1_info[,6]< 0.6 ), 7] ))
+bymaf1 <- c(bymaf1, mean(c1_info[which(c1_info[,6] >= 0.6 & c1_info[,6]< 0.7 ), 7] ))
+bymaf1 <- c(bymaf1, mean(c1_info[which(c1_info[,6] >= 0.7 & c1_info[,6]< 0.8 ), 7] ))
+bymaf1 <- c(bymaf1, mean(c1_info[which(c1_info[,6] >= 0.8 & c1_info[,6]< 0.9 ), 7] ))
+bymaf1 <- c(bymaf1, mean(c1_info[which(c1_info[,6] >= 0.9 & c1_info[,6]< 0.99), 7] ))
+
+lines1$AR2 <- bymaf1
+############################################################################################################
+
+lines2 <- matrix(0, nrow = 14, ncol = 3) 
+lines2 <- as.data.frame(lines2)
+colnames(lines2) <- c("Chromosome", "AR2", "Position")
+lines2$Chromosome <- rep(2, 14)
+lines2$Position <- c(0.02, 0.03, 0.04, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1)
+
+bymaf2 <- mean(c2_info[which(c2_info[,6] < 0.02), 7] )
+bymaf2 <- c(bymaf2, mean(c2_info[which(c2_info[,6] >= 0.02 & c2_info[,6]< 0.03 ), 7] ))
+bymaf2 <- c(bymaf2, mean(c2_info[which(c2_info[,6] >= 0.03 & c2_info[,6]< 0.04 ), 7] ))
+bymaf2 <- c(bymaf2, mean(c2_info[which(c2_info[,6] >= 0.04 & c2_info[,6]< 0.05 ), 7] ))
+bymaf2 <- c(bymaf2, mean(c2_info[which(c2_info[,6] >= 0.05 & c2_info[,6]< 0.1 ), 7] ))
+bymaf2 <- c(bymaf2, mean(c2_info[which(c2_info[,6] >= 0.1 & c2_info[,6]< 0.2 ), 7] ))
+bymaf2 <- c(bymaf2, mean(c2_info[which(c2_info[,6] >= 0.2 & c2_info[,6]< 0.3 ), 7] ))
+bymaf2 <- c(bymaf2, mean(c2_info[which(c2_info[,6] >= 0.3 & c2_info[,6]< 0.4 ), 7] ))
+bymaf2 <- c(bymaf2, mean(c2_info[which(c2_info[,6] >= 0.4 & c2_info[,6]< 0.5 ), 7] ))
+bymaf2 <- c(bymaf2, mean(c2_info[which(c2_info[,6] >= 0.5 & c2_info[,6]< 0.6 ), 7] ))
+bymaf2 <- c(bymaf2, mean(c2_info[which(c2_info[,6] >= 0.6 & c2_info[,6]< 0.7 ), 7] ))
+bymaf2 <- c(bymaf2, mean(c2_info[which(c2_info[,6] >= 0.7 & c2_info[,6]< 0.8 ), 7] ))
+bymaf2 <- c(bymaf2, mean(c2_info[which(c2_info[,6] >= 0.8 & c2_info[,6]< 0.9 ), 7] ))
+bymaf2 <- c(bymaf2, mean(c2_info[which(c2_info[,6] >= 0.9 & c2_info[,6]< 0.99), 7] ))
+
+lines2$AR2 <- bymaf2
+
+############################################################################################################
+
+lines3 <- matrix(0, nrow = 14, ncol = 3) 
+lines3 <- as.data.frame(lines3)
+colnames(lines3) <- c("Chromosome", "AR2", "Position")
+lines3$Chromosome <- rep(3, 14)
+lines3$Position <- c(0.02, 0.03, 0.04, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1)
+
+bymaf3 <- mean(c3_info[which(c3_info[,6] < 0.02), 7] )
+bymaf3 <- c(bymaf3, mean(c3_info[which(c3_info[,6] >= 0.02 & c3_info[,6]< 0.03 ), 7] ))
+bymaf3 <- c(bymaf3, mean(c3_info[which(c3_info[,6] >= 0.03 & c3_info[,6]< 0.04 ), 7] ))
+bymaf3 <- c(bymaf3, mean(c3_info[which(c3_info[,6] >= 0.04 & c3_info[,6]< 0.05 ), 7] ))
+bymaf3 <- c(bymaf3, mean(c3_info[which(c3_info[,6] >= 0.05 & c3_info[,6]< 0.1 ), 7] ))
+bymaf3 <- c(bymaf3, mean(c3_info[which(c3_info[,6] >= 0.1 & c3_info[,6]< 0.2 ), 7] ))
+bymaf3 <- c(bymaf3, mean(c3_info[which(c3_info[,6] >= 0.2 & c3_info[,6]< 0.3 ), 7] ))
+bymaf3 <- c(bymaf3, mean(c3_info[which(c3_info[,6] >= 0.3 & c3_info[,6]< 0.4 ), 7] ))
+bymaf3 <- c(bymaf3, mean(c3_info[which(c3_info[,6] >= 0.4 & c3_info[,6]< 0.5 ), 7] ))
+bymaf3 <- c(bymaf3, mean(c3_info[which(c3_info[,6] >= 0.5 & c3_info[,6]< 0.6 ), 7] ))
+bymaf3 <- c(bymaf3, mean(c3_info[which(c3_info[,6] >= 0.6 & c3_info[,6]< 0.7 ), 7] ))
+bymaf3 <- c(bymaf3, mean(c3_info[which(c3_info[,6] >= 0.7 & c3_info[,6]< 0.8 ), 7] ))
+bymaf3 <- c(bymaf3, mean(c3_info[which(c3_info[,6] >= 0.8 & c3_info[,6]< 0.9 ), 7] ))
+bymaf3 <- c(bymaf3, mean(c3_info[which(c3_info[,6] >= 0.9 & c3_info[,6]< 0.99), 7] ))
+
+lines3$AR2 <- bymaf3
+
+
+############################################################################################################
+
+lines4 <- matrix(0, nrow = 14, ncol = 3) 
+lines4 <- as.data.frame(lines4)
+colnames(lines4) <- c("Chromosome", "AR2", "Position")
+lines4$Chromosome <- rep(4, 14)
+lines4$Position <- c(0.02, 0.03, 0.04, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1)
+
+bymaf4 <- mean(c4_info[which(c4_info[,6] < 0.02), 7] )
+bymaf4 <- c(bymaf4, mean(c4_info[which(c4_info[,6] >= 0.02 & c4_info[,6]< 0.03 ), 7] ))
+bymaf4 <- c(bymaf4, mean(c4_info[which(c4_info[,6] >= 0.03 & c4_info[,6]< 0.04 ), 7] ))
+bymaf4 <- c(bymaf4, mean(c4_info[which(c4_info[,6] >= 0.04 & c4_info[,6]< 0.05 ), 7] ))
+bymaf4 <- c(bymaf4, mean(c4_info[which(c4_info[,6] >= 0.05 & c4_info[,6]< 0.1 ), 7] ))
+bymaf4 <- c(bymaf4, mean(c4_info[which(c4_info[,6] >= 0.1 & c4_info[,6]< 0.2 ), 7] ))
+bymaf4 <- c(bymaf4, mean(c4_info[which(c4_info[,6] >= 0.2 & c4_info[,6]< 0.3 ), 7] ))
+bymaf4 <- c(bymaf4, mean(c4_info[which(c4_info[,6] >= 0.3 & c4_info[,6]< 0.4 ), 7] ))
+bymaf4 <- c(bymaf4, mean(c4_info[which(c4_info[,6] >= 0.4 & c4_info[,6]< 0.5 ), 7] ))
+bymaf4 <- c(bymaf4, mean(c4_info[which(c4_info[,6] >= 0.5 & c4_info[,6]< 0.6 ), 7] ))
+bymaf4 <- c(bymaf4, mean(c4_info[which(c4_info[,6] >= 0.6 & c4_info[,6]< 0.7 ), 7] ))
+bymaf4 <- c(bymaf4, mean(c4_info[which(c4_info[,6] >= 0.7 & c4_info[,6]< 0.8 ), 7] ))
+bymaf4 <- c(bymaf4, mean(c4_info[which(c4_info[,6] >= 0.8 & c4_info[,6]< 0.9 ), 7] ))
+bymaf4 <- c(bymaf4, mean(c4_info[which(c4_info[,6] >= 0.9 & c4_info[,6]< 0.99), 7] ))
+
+lines4$AR2 <- bymaf4
+
+```
+
+
+
+```{r}
+tabla <- rbind(lines1, lines2, lines3, lines4)
+
+library(wesanderson)
+
+library(ggplot2)
+p <- ggplot(tabla, aes(x=Position, y=AR2, group=Chromosome, color=as.factor(Chromosome) ))
+p + geom_point(cex=0.5) + geom_line(cex=0.6) + theme_bw() +
+  scale_color_manual(values = wes_palette("Zissou")[2:5],
+                      name= "Chromosome") +
+  labs(title="AR2 per Ref Allele Freq", x="Reference Allele Frequencies") +
+  theme(plot.title=element_text(colour = "navyblue",face ="bold", size= 16, margin = margin(t=20, b=20)),
+        axis.title.y=element_text(margin=margin(0,20,0,0)),
+        axis.text=element_text(size=14), 
+        axis.title=element_text(size=14,face="bold"),
+        axis.title.x=element_text(margin=margin(20,0,0,0))) 
+      
+
+
+```
+
+## Marker density
+
+Load the marker density data from each Genotype Set
+
+```{r}
+
+HAPMAP   <- read.delim("/home/DB2/Imputation/HAPMAP2_VCFs/quinientos.snpden", sep = "\t")
+IMPUTE2  <- read.delim("/home/DB2/Imputation/IMPUTE2/PROCCESING/Density", sep = "\t", header = F)
+BEAGLE   <- read.delim("/home/DB2/Imputation/BEAGLE_imputation/CBSD/Imputed/Stage2/out.snpden", sep = "\t")
+
+```
+
+PLOT densities for chromosomes 1-18
+
+```{r}
+
+library(wesanderson)
+a <- wes_palette("Zissou")  # this one looks fine for the four colors 
+
+
+for (i in c(1,2,3,4,5,6,8,9,10,11,12,13,15,16,17,18)) {
+  
+  IMPUTE2_1 <- IMPUTE2[which(IMPUTE2[,2] == i),]
+  BEAGLE_1 <- BEAGLE[which(BEAGLE[,1] == i),]
+  HM_1 <- HAPMAP[which(HAPMAP[,1] == i),]
+  maint <- paste("Marker density in Chromosome ", i)
+  barplot(HM_1[,3], axes=FALSE, col= a[1], ylim=c(0, 50000), main = maint , ylab = "# of markers" ,cex.lab = 1.7, mgp = c(0.5,1,0))
+  par(new=TRUE)
+  barplot(IMPUTE2_1[,4], axes=FALSE, col = a[2], ylim=c(0, 25000))
+  par(new=TRUE)
+  barplot(BEAGLE_1[,3], axes=FALSE, col= a[3], ylim=c(0, 25000))
+  par(new=TRUE)
+  legend(horiz = T, 1,0.5, legend = c("HAPMAP", "IMPUTE2-WGI", "BEAGLE-WGI"), fill = c(a[1], a[2], a[3]), xpd = T, inset = c(0,0), bty = "n", cex = 1.2)
+  
+}
+
+```
+
+Solve the problem for chromosomes 7 & 14 where the BEAGLE set dont have markers in the last window
+
+```{r}
+library(dplyr)
+library(wesanderson)
+a <- wes_palette("Zissou")  # this one looks fine for the four colors 
+
+
+for (i in c(7,14)) {
+  
+  IMPUTE2_1 <- IMPUTE2[which(IMPUTE2[,2] == i),]
+  BEAGLE_1 <- BEAGLE[which(BEAGLE[,1] == i),]
+  HM_1 <- HAPMAP[which(HAPMAP[,1] == i),]
+  
+  adddummy <- as.data.frame(matrix(0, nrow = 1, ncol = 4))
+  colnames(adddummy) <- colnames(BEAGLE_1)
+  BEAGLE_1 <- bind_rows(BEAGLE_1, adddummy)
+  
+  maint <- paste("Marker density in Chromosome ", i)
+  barplot(HM_1[,3], axes=FALSE, col= a[1], ylim=c(0, 50000), main = maint , ylab = "# of markers" ,cex.lab = 1.7, mgp = c(0.5,1,0))
+  par(new=TRUE)
+  barplot(IMPUTE2_1[,4], axes=FALSE, col = a[2], ylim=c(0, 25000))
+  par(new=TRUE)
+  barplot(BEAGLE_1[,3], axes=FALSE, col= a[3], ylim=c(0, 25000))
+  par(new=TRUE)
+  legend(horiz = T, 1,0.5, legend = c("HAPMAP", "IMPUTE2-WGI", "BEAGLE-WGI"), fill = c(a[1], a[2], a[3]), xpd = T, inset = c(0,0), bty = "n", cex = 1.2)
+  
+}
+
+```
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
