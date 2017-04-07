@@ -1,0 +1,147 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# PHENOTYPE FILES:
+
+Load Phenotype files
+954 individuals with phenotypes. All individuals has phenotypes.
+
+```{r}
+#Load phenotypic Data (Already Filter no missings or extras)
+CBSD_pheno <- read.delim("~/Desktop/JL-Presentation/PAG_2017/Phenotypes/Phenos.txt", stringsAsFactors = F)
+```
+
+# GENOTYPE FILES:
+
+## GBS 
+Formatting the GBS Dosage file:
+Extracted from GBS_CBSD.vcf.gz containing 986 individuals and 41 530 SNPs
+
+```{r, echo=TRUE, warning=TRUE}
+
+GBS <- read.delim("/home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/DOSAGES/GBS_CBSD.DS.FORMAT")
+
+GBS[,1] <- paste("S",GBS[,1],"_", GBS[,2], sep="")
+rownames(GBS) <- GBS[,1]
+
+GBS <- GBS[,-1]
+GBS <- GBS[,-1]
+GBS <- t(GBS)
+
+#remove the dots in the rownames
+
+rows <- vector()
+for (i in 1:length(rownames(GBS))) {
+  rows <- c(rows, strsplit(rownames(GBS)[i], ".", fixed =T)[[1]][1])
+}
+rownames(GBS) <- rows
+
+# save the file as an R object
+save(GBS, file="/home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/DOSAGES/CBSD_GBS.Rdata")
+
+```
+
+
+# Impact of Imputation level on Prediction Accuracy
+
+Load the Genomic Relationship Matrices for the four datasets
+```{r}
+
+#KGBS (GBS)
+load(file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/2.Impact_imputation/GBS61K.RData")
+
+#KS1 (BEAGLE Imputed Stage 1)
+load(file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/2.Impact_imputation/stage1GRM.Rdata")
+
+#KS2 (BEAGLE Imputed Stage 2)
+load(file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/2.Impact_imputation/stage2GRM.RData")
+
+#I2_GRM (IMPUTE2)
+load(file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/I2CBSD.grm.Rdata")
+I2_GRM <- I2Dosage.grm
+
+```
+
+Running the GBLUP model cross-validation: 5 fold cross-validation (25 reps)
+
+```{r}
+
+#Load the required packages:
+library(rrBLUP)
+library(foreach)
+library(doParallel)
+
+# Load the cross validation code:
+source("/home/roberto/Desktop/JL-Presentation/PAG_2017/Code/GBLUP_functions.R")
+
+## GBS ##
+
+traits<-c("CBSD3S","CBSD6S","CBSDRS")
+proctime<-proc.time()
+cl<-makeCluster(6)
+registerDoParallel(cl)
+
+GB_GBS <- foreach(a=traits, virus=icount(), .inorder=TRUE) %dopar% {
+  require(EMMREML)
+  crossval<-FoldCrossValidation.V3.emmreml(CBSD_pheno,traits[virus],"CLONE",list(KGBS),5,25)
+}
+
+stopCluster(cl)
+proc.time() - proctime
+
+## BEAGLE stage I ##
+
+traits<-c("CBSD3S", "CBSD6S", "CBSDRS")
+proctime<-proc.time()
+cl<-makeCluster(6)
+registerDoParallel(cl)
+
+BEAGLEI <- foreach(a=traits, virus=icount(), .inorder=TRUE) %dopar% {
+  require(EMMREML)
+  crossval<-FoldCrossValidation.V3.emmreml(CBSD_pheno,traits[virus],"CLONE",list(KS1),5,25)
+}
+
+stopCluster(cl)
+proc.time() - proctime
+
+
+## BEAGLE stage II ##
+
+traits<-c("CBSD3S", "CBSD6S", "CBSDRS")
+proctime<-proc.time()
+cl<-makeCluster(6)
+registerDoParallel(cl)
+
+BEAGLEII <- foreach(a=traits, virus=icount(), .inorder=TRUE) %dopar% {
+  require(EMMREML)
+  crossval<-FoldCrossValidation.V3.emmreml(CBSD_pheno,traits[virus],"CLONE",list(KS2),5,25)
+}
+
+stopCluster(cl)
+proc.time() - proctime
+
+
+## IMPUTE2 ##
+
+traits<-c("CBSD3S", "CBSD6S", "CBSDRS")
+proctime<-proc.time()
+cl<-makeCluster(6)
+registerDoParallel(cl)
+
+IMPUTE2 <- foreach(a=traits, virus=icount(), .inorder=TRUE) %dopar% {
+  require(EMMREML)
+  crossval<-FoldCrossValidation.V3.emmreml(CBSD_pheno,traits[virus],"CLONE",list(I2_GRM),5,25)
+}
+
+stopCluster(cl)
+proc.time() - proctime
+
+```
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
