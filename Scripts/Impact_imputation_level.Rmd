@@ -13,38 +13,9 @@ Load Phenotype files
 CBSD_pheno <- read.delim("~/Desktop/JL-Presentation/PAG_2017/Phenotypes/Phenos.txt", stringsAsFactors = F)
 ```
 
-# GENOTYPE FILES:
-
-## GBS 
-Formatting the GBS Dosage file:
-Extracted from GBS_CBSD.vcf.gz containing 986 individuals and 41 530 SNPs
-
-```{r, echo=TRUE, warning=TRUE}
-
-GBS <- read.delim("/home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/DOSAGES/GBS_CBSD.DS.FORMAT")
-
-GBS[,1] <- paste("S",GBS[,1],"_", GBS[,2], sep="")
-rownames(GBS) <- GBS[,1]
-
-GBS <- GBS[,-1]
-GBS <- GBS[,-1]
-GBS <- t(GBS)
-
-#remove the dots in the rownames
-
-rows <- vector()
-for (i in 1:length(rownames(GBS))) {
-  rows <- c(rows, strsplit(rownames(GBS)[i], ".", fixed =T)[[1]][1])
-}
-rownames(GBS) <- rows
-
-# save the file as an R object
-save(GBS, file="/home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/DOSAGES/CBSD_GBS.Rdata")
-
-```
-
-
 # Impact of Imputation level on Prediction Accuracy
+
+## FULL-datasets
 
 Load the Genomic Relationship Matrices for the four datasets
 ```{r}
@@ -139,6 +110,231 @@ stopCluster(cl)
 proc.time() - proctime
 
 ```
+
+Plot the Accuracies
+
+
+```{r}
+
+# NEW GBS accuracies
+GBSdf <- matrix(0, nrow=75, ncol = 3) 
+colnames(GBSdf) <- c("Accuracy", "Set", "Trait")
+GBSdf[1:25,1] <- as.numeric(GB_GBS[[1]]$accuracies[,3])
+GBSdf[1:25,2] <- "GBS"
+GBSdf[1:25,3] <- "CBSD3MAP"
+GBSdf[26:50,1] <- as.numeric(GB_GBS[[2]]$accuracies[,3])
+GBSdf[26:50,2] <- "GBS"
+GBSdf[26:50,3] <- "CBSD6MAP"
+GBSdf[51:75,1] <- as.numeric(GB_GBS[[3]]$accuracies[,3])
+GBSdf[51:75,2] <- "GBS"
+GBSdf[51:75,3] <- "CBSDR"
+
+# OLD GBS vector from ~/Desktop/JL-Presentation/Accuracies##
+vector <- c(0.39,0.42,0.40,0.39,0.40,0.40,0.38,0.40,0.39,0.38,0.367,0.4,0.409,0.398,0.3849,0.3865, 0.3924, 0.3973, 0.3847, 0.4132, 0.3728, 0.3818, 0.4088, 0.39,0.3831)
+GBSdf[,1] <- as.numeric(vector)
+GBSdf[,2] <- "GBS"
+GBSdf[,3] <- "NN"
+
+# BEAGLE STAGE I accuracies
+Stage1 <- matrix(0, nrow=75, ncol = 3) 
+colnames(Stage1) <- c("Accuracy", "Set", "Trait")
+Stage1[1:25,1] <- as.numeric(BEAGLEI[[1]]$accuracies[,3])
+Stage1[1:25,2] <- "BEAGLE-1"
+Stage1[1:25,3] <- "CBSD3MAP"
+Stage1[26:50,1] <- as.numeric(BEAGLEI[[2]]$accuracies[,3])
+Stage1[26:50,2] <- "BEAGLE-1"
+Stage1[26:50,3] <- "CBSD6MAP"
+Stage1[51:75,1] <- as.numeric(BEAGLEI[[3]]$accuracies[,3])
+Stage1[51:75,2] <- "BEAGLE-1"
+Stage1[51:75,3] <- "CBSDR"
+
+# BEAGLE STAGE II accuracies
+Stage2 <- matrix(0, nrow=75, ncol = 3) 
+colnames(Stage2) <- c("Accuracy", "Set", "Trait")
+Stage2[1:25,1] <- as.numeric(BEAGLEII[[1]]$accuracies[,3])
+Stage2[1:25,2] <- "BEAGLE-2"
+Stage2[1:25,3] <- "CBSD3MAP"
+Stage2[26:50,1] <- as.numeric(BEAGLEII[[2]]$accuracies[,3])
+Stage2[26:50,2] <- "BEAGLE-2"
+Stage2[26:50,3] <- "CBSD6MAP"
+Stage2[51:75,1] <- as.numeric(BEAGLEII[[3]]$accuracies[,3])
+Stage2[51:75,2] <- "BEAGLE-2"
+Stage2[51:75,3] <- "CBSDR"
+
+# IMPUTE2 accuracies
+Impute2 <- matrix(0, nrow=75, ncol = 3) 
+colnames(Impute2) <- c("Accuracy", "Set", "Trait")
+Impute2[1:25,1] <- as.numeric(IMPUTE2[[1]]$accuracies[,3])
+Impute2[1:25,2] <- "IMPUTE2"
+Impute2[1:25,3] <- "CBSD3MAP"
+Impute2[26:50,1] <- as.numeric(IMPUTE2[[2]]$accuracies[,3])
+Impute2[26:50,2] <- "IMPUTE2"
+Impute2[26:50,3] <- "CBSD6MAP"
+Impute2[51:75,1] <- as.numeric(IMPUTE2[[3]]$accuracies[,3])
+Impute2[51:75,2] <- "IMPUTE2"
+Impute2[51:75,3] <- "CBSDR"
+
+graph <- rbind(GBSdf, Stage1, Stage2, Impute2)
+acc <- as.numeric(graph[,1])
+
+graph <- as.data.frame(graph)
+graph[,1] <- acc
+
+```
+
+Loading required packages and plotting
+
+```{r}
+
+library(ggplot2)
+require(reshape2)
+library(wesanderson)
+
+graph$Set <- factor(graph$Set, levels=c("GBS", "BEAGLE-1", "BEAGLE-2", "IMPUTE2"))
+
+p <- ggplot(graph, aes(factor(Trait), Accuracy))
+p + geom_boxplot(aes(fill = Set)) + labs(title="Impact of Imputation Level on Accuracy", x="Imputation level") +  theme_bw() +
+  scale_fill_manual(values = wes_palette("Zissou")) +
+  theme(plot.title=element_text(colour = "navyblue",face ="bold", size= 18, margin = margin(t=20, b=20)),
+        axis.title.y=element_text(margin=margin(0,20,0,0)),
+        axis.text=element_text(size=15), 
+        axis.title=element_text(size=20,face="bold"),
+        axis.title.x=element_text(margin=margin(20,0,0,0))) 
+
+
+
+```
+
+
+## IMPUTE2 AR/subset
+What happens when we use only the GBS markers but imputed using Impute2
+
+```{r}
+
+I2GBS.dosage <- read.delim("/home/DB2/Imputation/IMPUTE2/PROCCESING/WORKING/IMPUTE2_at_gbs.dosage", header = TRUE, row.names = 1)
+I2GBS.grm <- A.mat(t(I2GBS.dosage-1)) 
+
+
+traits<-c("CBSD3S", "CBSD6S", "CBSDRS")
+proctime<-proc.time()
+cl<-makeCluster(6)
+registerDoParallel(cl)
+
+IMPUTE2GBS <- foreach(a=traits, virus=icount(), .inorder=TRUE) %dopar% {
+  require(EMMREML)
+  crossval<-FoldCrossValidation.V3.emmreml(CBSD_pheno,traits[virus],"CLONE",list(I2GBS.grm),5,25)
+}
+
+stopCluster(cl)
+proc.time() - proctime
+
+
+```
+
+What happens when we use only the higly accurate imputed markers AR2 > 0.9
+
+```{r}
+
+I290.dosage <- read.delim("/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/CBSD.I2_0.9.dosage", header = TRUE, row.names = 1)
+I290.grm <- A.mat(t(I2GBS.dosage-1)) 
+
+
+traits<-c("CBSD3S", "CBSD6S", "CBSDRS")
+proctime<-proc.time()
+cl<-makeCluster(6)
+registerDoParallel(cl)
+
+IMPUTE290 <- foreach(a=traits, virus=icount(), .inorder=TRUE) %dopar% {
+  require(EMMREML)
+  crossval<-FoldCrossValidation.V3.emmreml(CBSD_pheno,traits[virus],"CLONE",list(I290.grm),5,25)
+}
+
+stopCluster(cl)
+proc.time() - proctime
+
+
+```
+
+```{r}
+
+# NEW GBS accuracies
+GBSdf <- matrix(0, nrow=75, ncol = 3) 
+colnames(GBSdf) <- c("Accuracy", "Set", "Trait")
+GBSdf[1:25,1] <- as.numeric(GB_GBS[[1]]$accuracies[,3])
+GBSdf[1:25,2] <- "GBS"
+GBSdf[1:25,3] <- "CBSD3MAP"
+GBSdf[26:50,1] <- as.numeric(GB_GBS[[2]]$accuracies[,3])
+GBSdf[26:50,2] <- "GBS"
+GBSdf[26:50,3] <- "CBSD6MAP"
+GBSdf[51:75,1] <- as.numeric(GB_GBS[[3]]$accuracies[,3])
+GBSdf[51:75,2] <- "GBS"
+GBSdf[51:75,3] <- "CBSDR"
+
+# IMPUTE2 accuracies
+Impute2 <- matrix(0, nrow=75, ncol = 3) 
+colnames(Impute2) <- c("Accuracy", "Set", "Trait")
+Impute2[1:25,1] <- as.numeric(IMPUTE2[[1]]$accuracies[,3])
+Impute2[1:25,2] <- "IMPUTE2"
+Impute2[1:25,3] <- "CBSD3MAP"
+Impute2[26:50,1] <- as.numeric(IMPUTE2[[2]]$accuracies[,3])
+Impute2[26:50,2] <- "IMPUTE2"
+Impute2[26:50,3] <- "CBSD6MAP"
+Impute2[51:75,1] <- as.numeric(IMPUTE2[[3]]$accuracies[,3])
+Impute2[51:75,2] <- "IMPUTE2"
+Impute2[51:75,3] <- "CBSDR"
+
+# IMPUTE2GBS accuracies (only GBS sites)
+Impute2GBS <- matrix(0, nrow=75, ncol = 3) 
+colnames(Impute2GBS) <- c("Accuracy", "Set", "Trait")
+Impute2GBS[1:25,1] <- as.numeric(IMPUTE2GBS[[1]]$accuracies[,3])
+Impute2GBS[1:25,2] <- "Impute2GBS"
+Impute2GBS[1:25,3] <- "CBSD3MAP"
+Impute2GBS[26:50,1] <- as.numeric(IMPUTE2GBS[[2]]$accuracies[,3])
+Impute2GBS[26:50,2] <- "Impute2GBS"
+Impute2GBS[26:50,3] <- "CBSD6MAP"
+Impute2GBS[51:75,1] <- as.numeric(IMPUTE2GBS[[3]]$accuracies[,3])
+Impute2GBS[51:75,2] <- "Impute2GBS"
+Impute2GBS[51:75,3] <- "CBSDR"
+
+# IMPUTE290 accuracies (only GBS sites)
+Impute290 <- matrix(0, nrow=75, ncol = 3) 
+colnames(Impute290) <- c("Accuracy", "Set", "Trait")
+Impute290[1:25,1] <- as.numeric(IMPUTE290[[1]]$accuracies[,3])
+Impute290[1:25,2] <- "Impute290"
+Impute290[1:25,3] <- "CBSD3MAP"
+Impute290[26:50,1] <- as.numeric(IMPUTE290[[2]]$accuracies[,3])
+Impute290[26:50,2] <- "Impute290"
+Impute290[26:50,3] <- "CBSD6MAP"
+Impute290[51:75,1] <- as.numeric(IMPUTE290[[3]]$accuracies[,3])
+Impute290[51:75,2] <- "Impute290"
+Impute290[51:75,3] <- "CBSDR"
+
+
+graph2 <- rbind(GBSdf, Impute2, Impute2GBS, Impute290)
+acc <- as.numeric(graph2[,1])
+
+graph2 <- as.data.frame(graph2)
+graph2[,1] <- acc
+```
+
+Graph
+
+```{r}
+
+graph2$Set <- factor(graph2$Set, levels=c("GBS", "IMPUTE2", "Impute2GBS", "Impute290"))
+
+p <- ggplot(graph2, aes(factor(Trait), Accuracy))
+p + geom_boxplot(aes(fill = Set)) + labs(title="Impact of Imputation Level on Accuracy", x="Imputation level") +  theme_bw() +
+  scale_fill_manual(values = wes_palette("Zissou")) +
+  theme(plot.title=element_text(colour = "navyblue",face ="bold", size= 18, margin = margin(t=20, b=20)),
+        axis.title.y=element_text(margin=margin(0,20,0,0)),
+        axis.text=element_text(size=15), 
+        axis.title=element_text(size=20,face="bold"),
+        axis.title.x=element_text(margin=margin(20,0,0,0))) 
+
+
+```
+
 
 
 
