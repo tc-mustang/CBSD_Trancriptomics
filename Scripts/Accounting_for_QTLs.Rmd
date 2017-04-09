@@ -69,20 +69,100 @@ save(kernelx2, file = "/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QT
 ### Random 3 kernels 
 Everything but 4 and 11
 
+Getting relationship matrix for everything (run this only once)
+All the relationship markers will be saved in /home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QTLS/Dosages/
 
+```{r}
 
+for (i in 1:18) {
+  chr <- paste0("chr", i) 
+  assign(chr, read.delim(paste0("/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QTLS/Dosages/",i,".dosage"), header = TRUE, row.names = 1))
+  grms <- paste0(chr, ".grm")
+  assign(grms, A.mat(t(get(chr)-1)))
+  save(list=grms, file = paste0("/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QTLS/Dosages/", grms))
+}
 
+```
 
+Run the two kernel model with random chromosome pair in each iteration
 
+```{r}
+
+take <- c(1,2,3,5,6,7,8,9,10,12,13,14,15,16,17,18)
+
+CBSD3 <- matrix(0, nrow=25, ncol = 3)
+CBSD6 <- matrix(0, nrow=25, ncol = 3)
+CBSDR <- matrix(0, nrow=25, ncol = 3)
+
+colnames(CBSD3) <- c("K1", "K2", "Total")
+colnames(CBSD6) <- c("K1", "K2", "Total")
+colnames(CBSDR) <- c("K1", "K2", "Total")
+
+for (i in 1:25) {
+  
+  cromosomas <- sample(take, 2, replace = F)
+  k1 <- paste0("chr", cromosomas[1],".grm")
+  k2 <- paste0("chr", cromosomas[2],".grm")
+  kf <- list(get(k1),get(k2))
+  
+  traits<-c("CBSD3S","CBSD6S","CBSDRS")
+
+  proctime<-proc.time()
+  cl<-makeCluster(6)
+  registerDoParallel(cl)
+  
+  atmp <- foreach(a=traits, virus=icount(), .inorder=TRUE) %dopar% {
+  require(EMMREML)
+  crossval<-FoldCrossValidation.V3.emmreml(CBSD_pheno,traits[virus],"CLONE",kf ,5,1)
+  
+  }
+  stopCluster(cl)
+  proc.time() - proctime
+  
+  k3 <- atmp[[1]]$accuracies[1,3]
+  l3 <- atmp[[1]]$accuracies[1,4]
+  m3 <- atmp[[1]]$accuracies[1,5]
+  
+  k6 <- atmp[[2]]$accuracies[1,3]
+  l6 <- atmp[[2]]$accuracies[1,4]
+  m6 <- atmp[[2]]$accuracies[1,5]
+  
+  kr <- atmp[[3]]$accuracies[1,3]
+  lr <- atmp[[3]]$accuracies[1,4]
+  mr <- atmp[[3]]$accuracies[1,5]
+  
+  CBSD3[i,] <- c(k3,l3,m3)
+  CBSD6[i,] <- c(k6,l6,m6)
+  CBSDR[i,] <- c(k6,l6,m6)
+  
+}
+
+```
 
 Run the 3 kernel model (chromosome 4, 11 & everything else) GS Model
 
 ```{r}
 
+# Run the cross-validation
 
+traits<-c("CBSD3S","CBSD6S","CBSDRS")
+proctime<-proc.time()
+cl<-makeCluster(6)
+registerDoParallel(cl)
+
+load("/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QTLS/rotg.grm")
+
+kernelx3 <- foreach(a=traits, virus=icount(), .inorder=TRUE) %dopar% {
+  require(EMMREML)
+  crossval<-FoldCrossValidation.V3.emmreml(CBSD_pheno,traits[virus],"CLONE",list(chr4.grm, chr11.grm, rotg.grm),5,25)
+}
+
+stopCluster(cl)
+proc.time() - proctime
+
+save(kernelx3, file = "/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QTLS/kernelx3")
 
 ```
-
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
 
