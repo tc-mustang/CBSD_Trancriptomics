@@ -1,0 +1,89 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Accounting for known QTLs in predictions
+
+Using the reference chromosome 4 and chromosome 11 from kayondo et al. for foliar and chromosome 18 from Morag for roots
+
+
+## Foliar QTLs (chromosome 4 and chromosome 11)
+
+Make relationship matrices for chromosome 4, chromosome 11 and rest of the genome (Just run this once)
+
+```{r}
+
+chr4  <- read.delim("/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QTLS/4.dosage", header = TRUE, row.names = 1)
+chr11 <- read.delim("/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QTLS/11.dosage", header = TRUE, row.names = 1)
+rotg  <- read.delim("/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QTLS/rest.dosage", header = TRUE, row.names = 1)
+
+chr4.grm    <- A.mat(t(chr4-1))
+chr11.grm   <- A.mat(t(chr11-1)) 
+rotg.grm    <- A.mat(t(rotg-1))
+
+save(chr4.grm, file = "/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QTLS/4.grm")
+save(chr11.grm, file = "/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QTLS/11.grm")
+save(rotg.grm, file = "/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QTLS/rotg.grm")
+
+```
+
+### Run the 2 kernel (chromosome 4 & 11) GS Model
+
+```{r}
+
+load("/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QTLS/4.grm")
+load("/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QTLS/11.grm")
+
+#Load the required packages:
+library(rrBLUP)
+library(foreach)
+library(doParallel)
+
+# Load the cross validation code:
+source("/home/roberto/Desktop/JL-Presentation/PAG_2017/Code/GBLUP_functions.R")
+
+#Load phenotypic Data (Already Filter no missings or extras)
+CBSD_pheno <- read.delim("~/Desktop/JL-Presentation/PAG_2017/Phenotypes/Phenos.txt", stringsAsFactors = F)
+
+
+# Run the cross-validation
+
+traits<-c("CBSD3S","CBSD6S","CBSDRS")
+proctime<-proc.time()
+cl<-makeCluster(6)
+registerDoParallel(cl)
+
+kernelx2 <- foreach(a=traits, virus=icount(), .inorder=TRUE) %dopar% {
+  require(EMMREML)
+  crossval<-FoldCrossValidation.V3.emmreml(CBSD_pheno,traits[virus],"CLONE",list(chr11.grm, chr4.grm),5,25)
+}
+
+stopCluster(cl)
+proc.time() - proctime
+
+save(kernelx2, file = "/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QTLS/kernelx2")
+
+```
+
+### Random 3 kernels 
+Everything but 4 and 11
+
+
+
+
+
+
+
+Run the 3 kernel model (chromosome 4, 11 & everything else) GS Model
+
+```{r}
+
+
+
+```
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
