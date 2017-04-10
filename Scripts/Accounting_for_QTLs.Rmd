@@ -133,11 +133,130 @@ for (i in 1:25) {
   
   CBSD3[i,] <- c(k3,l3,m3)
   CBSD6[i,] <- c(k6,l6,m6)
-  CBSDR[i,] <- c(k6,l6,m6)
+  CBSDR[i,] <- c(kr,lr,mr)
   
 }
 
 ```
+
+Set the dataframes for GGPLOT
+
+```{r}
+
+library(tidyr)
+library(magrittr)
+library(dplyr)
+
+CBSD3t <- gather(as.data.frame(CBSD3), value = "ACCURACIES", key = "K" ) %>%
+  mutate(SET = "Random") %>%
+  mutate(TRAIT = "CBSD3")
+
+CBSD6t <- gather(as.data.frame(CBSD6), value = "ACCURACIES", key = "K" ) %>%
+  mutate(SET = "Random") %>%
+  mutate(TRAIT = "CBSD6")
+
+CBSDrt <- gather(as.data.frame(CBSDR), value = "ACCURACIES", key = "K" ) %>%
+  mutate(SET = "Random") %>%
+  mutate(TRAIT = "CBSDR")
+
+### Ready to ggplot only Random
+Random <- bind_rows(CBSD3t, CBSD6t, CBSDrt)
+
+
+CBSD3QTL <- kernelx2[[1]]$accuracies %>%
+  select(Trait, Acc.K1, Acc.K2, Acc.TotGen ) %>%
+  gather(value= "ACCURACIES", key = "K", Acc.K1, Acc.K2, Acc.TotGen)  %>%
+  mutate(K = recode(K, "Acc.K1" = "Chr11")) %>%
+  mutate(K = recode(K, "Acc.K2" = "Chr4")) %>%
+  mutate(K = recode(K, "Acc.TotGen" = "Total")) %>%
+  rename(TRAIT = Trait) %>%
+  mutate(TRAIT = recode(TRAIT, "CBSD3S" = "CBSD3")) %>%
+  mutate(SET = "QTL")
+
+CBSD6QTL <- kernelx2[[2]]$accuracies %>%
+  select(Trait, Acc.K1, Acc.K2, Acc.TotGen ) %>%
+  gather(value= "ACCURACIES", key = "K", Acc.K1, Acc.K2, Acc.TotGen)  %>%
+  mutate(K = recode(K, "Acc.K1" = "Chr11")) %>%
+  mutate(K = recode(K, "Acc.K2" = "Chr4")) %>%
+  mutate(K = recode(K, "Acc.TotGen" = "Total")) %>%
+  rename(TRAIT = Trait) %>%
+  mutate(TRAIT = recode(TRAIT, "CBSD6S" = "CBSD6")) %>%
+  mutate(SET = "QTL")
+
+CBSDRQTL <- kernelx2[[3]]$accuracies %>%
+  select(Trait, Acc.K1, Acc.K2, Acc.TotGen ) %>%
+  gather(value= "ACCURACIES", key = "K", Acc.K1, Acc.K2, Acc.TotGen)  %>%
+  mutate(K = recode(K, "Acc.K1" = "Chr11")) %>%
+  mutate(K = recode(K, "Acc.K2" = "Chr4")) %>%
+  mutate(K = recode(K, "Acc.TotGen" = "Total")) %>%
+  rename(TRAIT = Trait) %>%
+  mutate(TRAIT = recode(TRAIT, "CBSDRS" = "CBSDR")) %>%
+  mutate(SET = "QTL")
+
+### Ready to ggplot only QTL
+QTL <- bind_rows(CBSD3QTL, CBSD6QTL, CBSDRQTL)
+
+### LOAD I2 INFO > 0.9 GS object
+
+load("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level/IMPUTE290.RData")
+
+CBSD3I2 <- IMPUTE290[[1]]$accuracies %>%
+  select(Trait, Acc.K1 ) %>%
+  gather(value= "ACCURACIES", key = "K", Acc.K1)  %>%
+  mutate(K = recode(K, "Acc.K1" = "Total")) %>%
+  rename(TRAIT = Trait) %>%
+  mutate(TRAIT = recode(TRAIT, "CBSD3S" = "CBSD3")) %>%
+  mutate(SET = "WGI")
+
+CBSD6I2 <- IMPUTE290[[2]]$accuracies %>%
+  select(Trait, Acc.K1 ) %>%
+  gather(value= "ACCURACIES", key = "K", Acc.K1)  %>%
+  mutate(K = recode(K, "Acc.K1" = "Total")) %>%
+  rename(TRAIT = Trait) %>%
+  mutate(TRAIT = recode(TRAIT, "CBSD6S" = "CBSD6")) %>%
+  mutate(SET = "WGI")
+
+CBSDRI2 <- IMPUTE290[[3]]$accuracies %>%
+  select(Trait, Acc.K1 ) %>%
+  gather(value= "ACCURACIES", key = "K", Acc.K1)  %>%
+  mutate(K = recode(K, "Acc.K1" = "Total")) %>%
+  rename(TRAIT = Trait) %>%
+  mutate(TRAIT = recode(TRAIT, "CBSDRS" = "CBSDR")) %>%
+  mutate(SET = "WGI")
+
+
+### Ready to ggplot only QTL
+WGI <- bind_rows(CBSD3I2, CBSD6I2, CBSDRI2)
+
+### Merge everything
+Accounting <- bind_rows(Random, QTL, WGI)
+
+```
+
+GRAPH
+
+```{r, fig.height=7, fig.width=15}
+
+library(ggplot2)
+library(wesanderson)
+
+graph2$Set <- factor(graph2$Set, levels=c("GBS", "IMPUTE2", "Impute2GBS", "Impute290"))
+
+p <- ggplot(Accounting, aes(factor(K), ACCURACIES))
+p + geom_boxplot(aes(fill = SET)) + labs(title="Impact of Imputation Level on Accuracy", x="Imputation level") +  theme_bw() +
+  facet_grid(. ~ TRAIT) +
+  scale_fill_manual(values = wes_palette("Zissou")) +
+  theme(plot.title=element_text(colour = "navyblue",face ="bold", size= 18, margin = margin(t=20, b=20)),
+        axis.title.y=element_text(margin=margin(0,20,0,0)),
+        axis.text=element_text(size=15), 
+        axis.title=element_text(size=20,face="bold"),
+        axis.title.x=element_text(margin=margin(20,0,0,0))) 
+
+
+```
+
+
+
 
 Run the 3 kernel model (chromosome 4, 11 & everything else) GS Model
 
