@@ -66,7 +66,7 @@ save(kernelx2, file = "/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QT
 
 ```
 
-### Random 3 kernels 
+### Random 2 kernels 
 Everything but 4 and 11
 
 Getting relationship matrix for everything (run this only once)
@@ -137,6 +137,10 @@ for (i in 1:25) {
   
 }
 
+save(CBSD3, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Accounting_for_QTL/CBSD3_random.Rdata")
+save(CBSD6, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Accounting_for_QTL/CBSD6_random.Rdata")
+save(CBSDR, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Accounting_for_QTL/CBSDR_random.Rdata")
+
 ```
 
 Set the dataframes for GGPLOT
@@ -198,9 +202,9 @@ QTL <- bind_rows(CBSD3QTL, CBSD6QTL, CBSDRQTL)
 
 ### LOAD I2 INFO > 0.9 GS object
 
-load("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level/IMPUTE290.RData")
+load("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level/IMPUTE2.RData")
 
-CBSD3I2 <- IMPUTE290[[1]]$accuracies %>%
+CBSD3I2 <- IMPUTE2[[1]]$accuracies %>%
   select(Trait, Acc.K1 ) %>%
   gather(value= "ACCURACIES", key = "K", Acc.K1)  %>%
   mutate(K = recode(K, "Acc.K1" = "Total")) %>%
@@ -208,7 +212,7 @@ CBSD3I2 <- IMPUTE290[[1]]$accuracies %>%
   mutate(TRAIT = recode(TRAIT, "CBSD3S" = "CBSD3")) %>%
   mutate(SET = "WGI")
 
-CBSD6I2 <- IMPUTE290[[2]]$accuracies %>%
+CBSD6I2 <- IMPUTE2[[2]]$accuracies %>%
   select(Trait, Acc.K1 ) %>%
   gather(value= "ACCURACIES", key = "K", Acc.K1)  %>%
   mutate(K = recode(K, "Acc.K1" = "Total")) %>%
@@ -216,7 +220,7 @@ CBSD6I2 <- IMPUTE290[[2]]$accuracies %>%
   mutate(TRAIT = recode(TRAIT, "CBSD6S" = "CBSD6")) %>%
   mutate(SET = "WGI")
 
-CBSDRI2 <- IMPUTE290[[3]]$accuracies %>%
+CBSDRI2 <- IMPUTE2[[3]]$accuracies %>%
   select(Trait, Acc.K1 ) %>%
   gather(value= "ACCURACIES", key = "K", Acc.K1)  %>%
   mutate(K = recode(K, "Acc.K1" = "Total")) %>%
@@ -240,12 +244,15 @@ GRAPH
 library(ggplot2)
 library(wesanderson)
 
-graph2$Set <- factor(graph2$Set, levels=c("GBS", "IMPUTE2", "Impute2GBS", "Impute290"))
+Accounting$SET <- factor(Accounting$SET, levels=c("QTL", "Random", "WGI"))
+Accounting$K <- factor(Accounting$K, levels=c("Chr4", "Chr11", "K1", "K2", "Total"))
+
+kolor <- wes_palette(name = "Zissou")
 
 p <- ggplot(Accounting, aes(factor(K), ACCURACIES))
-p + geom_boxplot(aes(fill = SET)) + labs(title="Impact of Imputation Level on Accuracy", x="Imputation level") +  theme_bw() +
+p + geom_boxplot(aes(fill = SET)) + labs(title="Accounting for known QTLs", x="Imputation level") +  theme_bw() +
   facet_grid(. ~ TRAIT) +
-  scale_fill_manual(values = wes_palette("Zissou")) +
+  scale_fill_manual(values = c(kolor[1], "white", kolor[4])) +
   theme(plot.title=element_text(colour = "navyblue",face ="bold", size= 18, margin = margin(t=20, b=20)),
         axis.title.y=element_text(margin=margin(0,20,0,0)),
         axis.text=element_text(size=15), 
@@ -256,8 +263,7 @@ p + geom_boxplot(aes(fill = SET)) + labs(title="Impact of Imputation Level on Ac
 ```
 
 
-
-
+### Kernels x3 (4, 11, EE)
 Run the 3 kernel model (chromosome 4, 11 & everything else) GS Model
 
 ```{r}
@@ -282,6 +288,86 @@ proc.time() - proctime
 save(kernelx3, file = "/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QTLS/kernelx3")
 
 ```
+
+Get the data frames together
+
+```{r}
+
+# Two kernels
+QTL <- bind_rows(CBSD3QTL, CBSD6QTL, CBSDRQTL)
+
+# Three kernels
+CBSD33K <- kernelx3[[1]]$accuracies %>%
+  select(Trait, Acc.K1, Acc.K2, Acc.K3, Acc.TotGen ) %>%
+  gather(value= "ACCURACIES", key = "K", Acc.K1, Acc.K2, Acc.K3, Acc.TotGen)  %>%
+  mutate(K = recode(K, "Acc.K1" = "Chr4")) %>%
+  mutate(K = recode(K, "Acc.K2" = "Chr11")) %>%
+  mutate(K = recode(K, "Acc.K3" = "RG")) %>%
+  mutate(K = recode(K, "Acc.TotGen" = "Total")) %>%
+  rename(TRAIT = Trait) %>%
+  mutate(TRAIT = recode(TRAIT, "CBSD3S" = "CBSD3")) %>%
+  mutate(SET = "3K")
+
+CBSD63K <- kernelx3[[2]]$accuracies %>%
+  select(Trait, Acc.K1, Acc.K2, Acc.K3, Acc.TotGen ) %>%
+  gather(value= "ACCURACIES", key = "K", Acc.K1, Acc.K2, Acc.K3, Acc.TotGen)  %>%
+  mutate(K = recode(K, "Acc.K1" = "Chr4")) %>%
+  mutate(K = recode(K, "Acc.K2" = "Chr11")) %>%
+  mutate(K = recode(K, "Acc.K3" = "RG")) %>%
+  mutate(K = recode(K, "Acc.TotGen" = "Total")) %>%
+  rename(TRAIT = Trait) %>%
+  mutate(TRAIT = recode(TRAIT, "CBSD6S" = "CBSD6")) %>%
+  mutate(SET = "3K")
+
+CBSDR3K <- kernelx3[[3]]$accuracies %>%
+  select(Trait, Acc.K1, Acc.K2, Acc.K3, Acc.TotGen ) %>%
+  gather(value= "ACCURACIES", key = "K", Acc.K1, Acc.K2, Acc.K3, Acc.TotGen)  %>%
+  mutate(K = recode(K, "Acc.K1" = "Chr4")) %>%
+  mutate(K = recode(K, "Acc.K2" = "Chr11")) %>%
+  mutate(K = recode(K, "Acc.K3" = "RG")) %>%
+  mutate(K = recode(K, "Acc.TotGen" = "Total")) %>%
+  rename(TRAIT = Trait) %>%
+  mutate(TRAIT = recode(TRAIT, "CBSDRS" = "CBSDR")) %>%
+  mutate(SET = "3K")
+
+K3 <- bind_rows(CBSD33K, CBSD63K, CBSDR3K)
+
+# WGI
+WGI <- bind_rows(CBSD3I2, CBSD6I2, CBSDRI2)
+
+
+# Merge everything
+
+Everything <- bind_rows(QTL, K3, WGI)
+
+```
+
+GRAPH
+
+```{r, fig.height=7, fig.width=15}
+
+library(ggplot2)
+library(wesanderson)
+
+Everything$SET <- factor(Everything$SET, levels=c("QTL", "3K", "WGI"))
+Everything$K <- factor(Everything$K, levels=c("Chr4", "Chr11", "RG", "Total"))
+
+kolor <- wes_palette(name = "Zissou")
+
+p <- ggplot(Everything, aes(factor(K), ACCURACIES))
+p + geom_boxplot(aes(fill = SET)) + labs(title="Is there anything anywhere else?", x="Imputation level") +  theme_bw() +
+  facet_grid(. ~ TRAIT) +
+  scale_fill_manual(values = c(kolor[5],kolor[1],kolor[3])) +
+  theme(plot.title=element_text(colour = "navyblue",face ="bold", size= 18, margin = margin(t=20, b=20)),
+        axis.title.y=element_text(margin=margin(0,20,0,0)),
+        axis.text=element_text(size=15), 
+        axis.title=element_text(size=20,face="bold"),
+        axis.title.x=element_text(margin=margin(20,0,0,0))) 
+
+
+
+```
+
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
 
