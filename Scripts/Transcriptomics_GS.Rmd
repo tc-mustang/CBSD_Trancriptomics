@@ -1,0 +1,192 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Transcriptomics 
+Adding Transcriptomics Information into the Genomic Selection prediction models
+(Files will be saved in: /home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Transcriptomics/)
+
+
+## Differentially expressed genes
+
+## Calculate Interacting Genes 
+
+```{r}
+
+table_original <- read.delim("~/Desktop/JL-Presentation/Interaction/table")
+Expression <- read.delim("~/Desktop/JL-Presentation/Interaction/Expression_matrix")
+All_genes <- read.csv("~/Desktop/JL-Presentation/Interaction/All_genes", sep="", stringsAsFactors = F)
+
+genesformodel <- All_genes[,1]
+
+GI <- vector()
+GIT <- vector()
+
+for (genes in genesformodel) {
+  
+  line <- vector()
+  tmp_table <- Expression[grep(genes, Expression[,1]),2:4]
+  
+  for (i in 1:28){
+    line <- c(line, as.numeric(t(tmp_table[i,])))
+  }
+  
+  table_original[,2] <- line
+  table <- table_original[-remove,]
+  
+  if (all(as.numeric(line) < 1)){
+    GI <- c(GI, "No")
+    GIT <- c(GIT, "No")
+  } else {
+    tryCatch(fm02 <- lmer(as.numeric(EXPRESSION) ~ (1|REP) + as.factor(INOCULATION) * GENOTYPE * as.factor(TIME) , table), error=function(e) {fm02 <<- 1 } )
+    
+    tryCatch(GI <- c(GI,anova(fm02)[6][4,1]), error=function(e) {GI <<-c(GI,"error") } )
+    
+    tryCatch(GIT <- c(GIT,anova(fm02)[6][7,1]), error=function(e) {GIT <<-c(GIT,"error") } )
+  }
+  print(genes)
+}
+
+GXI <- matrix(0,nrow = 31895, ncol = 3)
+
+GXI[,1] <- All_genes[,1]
+GXI[,2] <- GI
+GXI[,3] <- GIT
+
+which(GXI[,3] < 0.05)
+
+write.table(GI,file = "GIpval_december", quote = F, sep = "\t")
+
+```
+
+
+```{r}
+######################### Calculate FDR for the pvalues #########################################
+
+library("fdrtool")
+library("dplyr")
+
+a <- which(GXI[,2] == "error")
+b <- which(GXI[,2] == "No")
+c <- c(a,b)
+
+fdrtable <- GXI[-c,]
+fdrtable <- fdrtable[,-3]
+
+dim(fdrtable)
+
+fdr = fdrtool(as.numeric(fdrtable[,2]), statistic="pvalue")
+
+Interaction            <- matrix(0, nrow = 26889, ncol = 2)
+colnames(Interaction)  <- c("GENE", "Qval") 
+Interaction[,2]        <- fdr$qval
+Interaction[,1]        <- fdrtable[,1]
+
+Interaction <- as.data.frame(Interaction)
+
+
+gff <- read.delim("/home/roberto/Desktop/JL-Presentation/Manhattan/gff.bed", header = F)
+colnames(gff) <- c("CHR", "POS", "POS1", "GENE", "OLD")
+gff <- gff[,-5]
+
+gff$GENE <- as.character(gff$GENE)
+Interaction$GENE <- as.character(Interaction$GENE)
+joined <- inner_join(Interaction,gff)
+
+
+######################################### Plot the manhattan plot ####################################################
+
+library(qqman)
+
+joined[,5] <- joined[,2]
+joined <- joined[,-2]
+colnames(joined) <- c("SNP","CHR","BP","P")
+bonfet <- -log10(0.01)
+loose <- -log10(0.05)
+
+joined$CHR <- as.numeric(as.character(joined$CHR))
+joined$P <- as.numeric(as.character(joined$P))
+joined$P <- joined$P + 0.00001
+min(joined$P)
+
+library(wesanderson)
+Zissou <- wes_palette("Zissou")
+
+manhattan(joined, cex = 0.3,col = c(Zissou[1], Zissou[3]), suggestiveline = F, genomewideline = F)
+abline(h=loose, col = "blue")
+abline(h=bonfet, col = "red")
+
+
+sel <- which(joined$P < 0.01)
+selo <- which(joined$P < 0.05)
+
+stringent <- joined[sel,]
+loose <- joined[selo,]
+
+write.table(stringent, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/5.Transcriptomics/first_timepoints/stringent5.txt", quote = F, sep = "\t",row.names = F)
+write.table(loose, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/5.Transcriptomics/first_timepoints/loose5.txt", quote = F, sep = "\t",row.names = F)
+
+```
+
+
+## FDR <0.05 Interacting Genes
+
+```{r}
+
+# Load the Interacting SNP dosages
+
+LI4 <- read.delim("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Transcriptomics/Interacting_genes/final_SNP_sets/LGI_4.dosage", header = T, row.names = 1)
+LI11 <- read.delim("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Transcriptomics/Interacting_genes/final_SNP_sets/LGI_11.dosage", header = T, row.names = 1)
+LIEE <- read.delim("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Transcriptomics/Interacting_genes/final_SNP_sets/LGI_EE.dosage", header = T, row.names = 1)
+
+# Create the GRMs
+
+library(rrBLUP)
+
+LI4.grm  <- A.mat(t(LI4-1))
+LI11.grm <- A.mat(t(LI11-1))
+LIEE.grm <- A.mat(t(LIEE-1))
+
+```
+
+
+```{r}
+
+#Load the required packages:
+library(rrBLUP)
+library(foreach)
+library(doParallel)
+
+# Load the cross validation code:
+source("/home/roberto/Desktop/JL-Presentation/PAG_2017/Code/GBLUP_functions.R")
+
+#Load phenotypic Data (Already Filter no missings or extras)
+CBSD_pheno <- read.delim("~/Desktop/JL-Presentation/PAG_2017/Phenotypes/Phenos.txt", stringsAsFactors = F)
+
+
+# Run the cross-validation
+
+traits<-c("CBSD3S","CBSD6S","CBSDRS")
+proctime<-proc.time()
+cl<-makeCluster(6)
+registerDoParallel(cl)
+
+transx3 <- foreach(a=traits, virus=icount(), .inorder=TRUE) %dopar% {
+  require(EMMREML)
+  crossval<-FoldCrossValidation.V3.emmreml(CBSD_pheno,traits[virus],"CLONE",list(LI4.grm, LI11.grm, LIEE.grm),5,25)
+}
+
+stopCluster(cl)
+proc.time() - proctime
+
+save(transx3, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Transcriptomics/transx3")
+
+
+```
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
