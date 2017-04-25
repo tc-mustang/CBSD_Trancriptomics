@@ -185,6 +185,308 @@ save(transx3, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Tra
 
 ```
 
+## Random genes in every iteration
+
+```{r}
+
+CBSD3random <- matrix(0, nrow=25, ncol = 4)
+CBSD6random <- matrix(0, nrow=25, ncol = 4)
+CBSDRrandom <- matrix(0, nrow=25, ncol = 4)
+
+colnames(CBSD3random) <- c("C4", "C11", "EE", "Total")
+colnames(CBSD6random) <- c("C4", "C11", "EE", "Total")
+colnames(CBSDRrandom) <- c("C4", "C11", "EE", "Total")
+
+for (i in 1:25) {
+
+  # Random set of genes three kernels on Batch  
+  # Ignore system warnings                  
+  
+  ##### I. Create a set of random markers for the three kernels ----
+  
+  setwd("/home/roberto/Desktop/JL-Presentation/Gene_lists/null_interaction")
+  system("grep -vf ee_random gene |grep -v \"Manes.11G\" | grep -v \"Manes.04G\" |  sort -R | head -n 1218 > /home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Transcriptomics/Random_genes/ee_random")
+  system("grep -vf LGI_11 gene |grep \"Manes.11G\" | sort -R | head -n 79 > /home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Transcriptomics/Random_genes/chr11_random")
+  system("grep -vf LGI_4 gene |grep \"Manes.04G\" | sort -R | head -n 71 > /home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Transcriptomics/Random_genes/chr4_random")
+  
+  ##### II. Extract the SNPs out of the random lists ----
+  
+  setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Transcriptomics/Random_genes/")
+  system("/home/roberto/Desktop/Scripts/CBSD/extract_snps_IMPUTE2.py chr4_random 1")
+  system("/home/roberto/Desktop/Scripts/CBSD/extract_snps_IMPUTE2.py chr11_random 1")
+  system("/home/roberto/Desktop/Scripts/CBSD/extract_snps_IMPUTE2.py ee_random 1")
+  
+  ##### III. Get the dosages
+  
+  setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Transcriptomics/Random_genes/")
+  system("/home/roberto/Desktop/Scripts/Imputation/grepy_set.py chr4_random.snps CBSD.I2.dosage  >  chr4_random.dosage  ")
+  system("/home/roberto/Desktop/Scripts/Imputation/grepy_set.py chr11_random.snps CBSD.I2.dosage >  chr11_random.dosage ")
+  system("/home/roberto/Desktop/Scripts/Imputation/grepy_set.py ee_random.snps CBSD.I2.dosage    >  ee_random.dosage    ")
+  
+  ##### IV. Load the Dosages and create the 3 relationship matrices ----
+  
+  setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Transcriptomics/Random_genes/")
+  chr4random  <- read.delim("chr4_random.dosage", header = TRUE, row.names = 1)
+  chr11random <- read.delim("chr11_random.dosage", header = TRUE, row.names = 1)
+  rotgrandom  <- read.delim("ee_random.dosage", header = TRUE, row.names = 1)
+  
+  chr4r.grm   <- A.mat( t(chr4random -1) )
+  chr11r.grm  <- A.mat( t(chr11random-1) ) 
+  rotgr.grm   <- A.mat( t(rotgrandom -1) )
+  
+  ##### V. Run the model ----
+  
+  traits<-c("CBSD3S","CBSD6S","CBSDRS")
+  proctime<-proc.time()
+  cl<-makeCluster(6)
+  registerDoParallel(cl)
+  
+  randomx3 <- foreach(a=traits, virus=icount(), .inorder=TRUE) %dopar% {
+    require(EMMREML)
+    crossval<-FoldCrossValidation.V3.emmreml(CBSD_pheno,traits[virus],"CLONE",list(chr4r.grm, chr11r.grm, rotgr.grm),5,15)
+  }
+  
+  stopCluster(cl)
+  proc.time() - proctime
+  
+  k3 <- randomx3[[1]]$accuracies[1,3]
+  l3 <- randomx3[[1]]$accuracies[1,4]
+  m3 <- randomx3[[1]]$accuracies[1,5]
+  n3 <- randomx3[[1]]$accuracies[1,6]
+
+  k6 <- randomx3[[2]]$accuracies[1,3]
+  l6 <- randomx3[[2]]$accuracies[1,4]
+  m6 <- randomx3[[2]]$accuracies[1,5]
+  n6 <- randomx3[[2]]$accuracies[1,6]
+  
+  kr <- randomx3[[3]]$accuracies[1,3]
+  lr <- randomx3[[3]]$accuracies[1,4]
+  mr <- randomx3[[3]]$accuracies[1,5]
+  nr <- randomx3[[3]]$accuracies[1,6]
+  
+  CBSD3random[i,] <- c(k3,l3,m3,n3)
+  CBSD6random[i,] <- c(k6,l6,m6,n6)
+  CBSDRrandom[i,] <- c(kr,lr,mr,nr)
+}
+
+
+
+
+```
+
+
+### Getting the dataframes
+
+```{r}
+
+
+CBSD3rr <- gather(as.data.frame(CBSD3random), value = "ACCURACIES", key = "K" ) %>%
+  mutate(K = recode(K, "C4" = "Chr4")) %>%
+  mutate(K = recode(K, "C11" = "Chr11")) %>%
+  mutate(K = recode(K, "EE" = "RG")) %>%
+  mutate(SET = "Random") %>%
+  mutate(TRAIT = "CBSD3")
+
+CBSD6rr <- gather(as.data.frame(CBSD6random), value = "ACCURACIES", key = "K" ) %>%
+  mutate(K = recode(K, "C4" = "Chr4")) %>%
+  mutate(K = recode(K, "C11" = "Chr11")) %>%
+  mutate(K = recode(K, "EE" = "RG")) %>%
+  mutate(SET = "Random") %>%
+  mutate(TRAIT = "CBSD6")
+
+CBSDrrr <- gather(as.data.frame(CBSDRrandom), value = "ACCURACIES", key = "K" ) %>%
+  mutate(K = recode(K, "C4" = "Chr4")) %>%
+  mutate(K = recode(K, "C11" = "Chr11")) %>%
+  mutate(K = recode(K, "EE" = "RG")) %>%
+  mutate(SET = "Random") %>%
+  mutate(TRAIT = "CBSDR")
+
+### Ready to ggplot only Random
+Randomgenes <- bind_rows(CBSD3rr, CBSD6rr, CBSDrrr)
+save(Randomgenes, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Transcriptomics/Random_genes/25randomtable.Rdata")
+
+# Three kernels
+trans33K <- transx3[[1]]$accuracies %>%
+  select(Trait, Acc.K1, Acc.K2, Acc.K3, Acc.TotGen ) %>%
+  gather(value= "ACCURACIES", key = "K", Acc.K1, Acc.K2, Acc.K3, Acc.TotGen)  %>%
+  mutate(K = recode(K, "Acc.K1" = "Chr4")) %>%
+  mutate(K = recode(K, "Acc.K2" = "Chr11")) %>%
+  mutate(K = recode(K, "Acc.K3" = "RG")) %>%
+  mutate(K = recode(K, "Acc.TotGen" = "Total")) %>%
+  rename(TRAIT = Trait) %>%
+  mutate(TRAIT = recode(TRAIT, "CBSD3S" = "CBSD3")) %>%
+  mutate(SET = "3K")
+
+trans63K <- transx3[[2]]$accuracies %>%
+  select(Trait, Acc.K1, Acc.K2, Acc.K3, Acc.TotGen ) %>%
+  gather(value= "ACCURACIES", key = "K", Acc.K1, Acc.K2, Acc.K3, Acc.TotGen)  %>%
+  mutate(K = recode(K, "Acc.K1" = "Chr4")) %>%
+  mutate(K = recode(K, "Acc.K2" = "Chr11")) %>%
+  mutate(K = recode(K, "Acc.K3" = "RG")) %>%
+  mutate(K = recode(K, "Acc.TotGen" = "Total")) %>%
+  rename(TRAIT = Trait) %>%
+  mutate(TRAIT = recode(TRAIT, "CBSD6S" = "CBSD6")) %>%
+  mutate(SET = "3K")
+
+transR3K <- transx3[[3]]$accuracies %>%
+  select(Trait, Acc.K1, Acc.K2, Acc.K3, Acc.TotGen ) %>%
+  gather(value= "ACCURACIES", key = "K", Acc.K1, Acc.K2, Acc.K3, Acc.TotGen)  %>%
+  mutate(K = recode(K, "Acc.K1" = "Chr4")) %>%
+  mutate(K = recode(K, "Acc.K2" = "Chr11")) %>%
+  mutate(K = recode(K, "Acc.K3" = "RG")) %>%
+  mutate(K = recode(K, "Acc.TotGen" = "Total")) %>%
+  rename(TRAIT = Trait) %>%
+  mutate(TRAIT = recode(TRAIT, "CBSDRS" = "CBSDR")) %>%
+  mutate(SET = "3K")
+
+K3 <- bind_rows(trans33K,trans63K, transR3K)
+
+# Merge everything
+transcriptomics <- bind_rows(K3, WGI, Randomgenes)
+
+```
+
+### Graphs
+
+```{r, fig.height=7, fig.width=15}
+
+library(ggplot2)
+library(wesanderson)
+
+#Everything$SET <- factor(Everything$SET, levels=c("QTL", "3K", "WGI"))
+#Everything$K <- factor(Everything$K, levels=c("Chr4", "Chr11", "RG", "Total"))
+
+kolor <- wes_palette(name = "Zissou")
+
+p <- ggplot(transcriptomics, aes(factor(K), ACCURACIES))
+p + geom_boxplot(aes(fill = SET)) + labs(title="Is there anything anywhere else?", x="Imputation level") +  theme_bw() +
+  facet_grid(. ~ TRAIT) +
+  scale_fill_manual(values = c(kolor[5],kolor[1],kolor[3])) +
+  theme(plot.title=element_text(colour = "navyblue",face ="bold", size= 18, margin = margin(t=20, b=20)),
+        ## Boxes from the grid
+        strip.text.x=element_text(size=16, face = "bold"),
+        strip.background=element_rect(colour="black", fill=kolor[2]),
+        ##
+        axis.title.y=element_text(margin=margin(0,20,0,0)),
+        axis.text=element_text(size=15), 
+        axis.title=element_text(size=20,face="bold"),
+        axis.title.x=element_text(margin=margin(20,0,0,0))) 
+
+
+```
+
+
+
+## Interacting Genes & DE
+
+```{r}
+
+# Load the Interacting SNP dosages
+
+LI4DE <- read.delim("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Transcriptomics/DE_genes/LGI4DE.dosage", header = T, row.names = 1)
+LI11DE <- read.delim("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Transcriptomics/DE_genes/LGI11DE.dosage", header = T, row.names = 1)
+LIEEDE <- read.delim("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Transcriptomics/DE_genes/LGIEEDE.dosage", header = T, row.names = 1)
+
+# Create the GRMs
+
+library(rrBLUP)
+
+LI4DE.grm  <- A.mat(t(LI4DE-1))
+LI11DE.grm <- A.mat(t(LI11DE-1))
+LIEEDE.grm <- A.mat(t(LIEEDE-1))
+
+
+
+# Run the cross-validation
+
+traits<-c("CBSD3S","CBSD6S","CBSDRS")
+proctime<-proc.time()
+cl<-makeCluster(6)
+registerDoParallel(cl)
+
+transx3DE <- foreach(a=traits, virus=icount(), .inorder=TRUE) %dopar% {
+  require(EMMREML)
+  crossval<-FoldCrossValidation.V3.emmreml(CBSD_pheno,traits[virus],"CLONE",list(LI4DE.grm, LI11DE.grm, LIEEDE.grm),5,25)
+}
+
+stopCluster(cl)
+proc.time() - proctime
+
+save(transx3DE, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Transcriptomics/transx3DE")
+
+
+```
+
+```{r}
+
+# Three kernels
+trans33KDE <- transx3DE[[1]]$accuracies %>%
+  select(Trait, Acc.K1, Acc.K2, Acc.K3, Acc.TotGen ) %>%
+  gather(value= "ACCURACIES", key = "K", Acc.K1, Acc.K2, Acc.K3, Acc.TotGen)  %>%
+  mutate(K = recode(K, "Acc.K1" = "Chr4")) %>%
+  mutate(K = recode(K, "Acc.K2" = "Chr11")) %>%
+  mutate(K = recode(K, "Acc.K3" = "RG")) %>%
+  mutate(K = recode(K, "Acc.TotGen" = "Total")) %>%
+  rename(TRAIT = Trait) %>%
+  mutate(TRAIT = recode(TRAIT, "CBSD3S" = "CBSD3")) %>%
+  mutate(SET = "3KDE")
+
+trans63KDE <- transx3DE[[2]]$accuracies %>%
+  select(Trait, Acc.K1, Acc.K2, Acc.K3, Acc.TotGen ) %>%
+  gather(value= "ACCURACIES", key = "K", Acc.K1, Acc.K2, Acc.K3, Acc.TotGen)  %>%
+  mutate(K = recode(K, "Acc.K1" = "Chr4")) %>%
+  mutate(K = recode(K, "Acc.K2" = "Chr11")) %>%
+  mutate(K = recode(K, "Acc.K3" = "RG")) %>%
+  mutate(K = recode(K, "Acc.TotGen" = "Total")) %>%
+  rename(TRAIT = Trait) %>%
+  mutate(TRAIT = recode(TRAIT, "CBSD6S" = "CBSD6")) %>%
+  mutate(SET = "3KDE")
+
+transR3KDE <- transx3DE[[3]]$accuracies %>%
+  select(Trait, Acc.K1, Acc.K2, Acc.K3, Acc.TotGen ) %>%
+  gather(value= "ACCURACIES", key = "K", Acc.K1, Acc.K2, Acc.K3, Acc.TotGen)  %>%
+  mutate(K = recode(K, "Acc.K1" = "Chr4")) %>%
+  mutate(K = recode(K, "Acc.K2" = "Chr11")) %>%
+  mutate(K = recode(K, "Acc.K3" = "RG")) %>%
+  mutate(K = recode(K, "Acc.TotGen" = "Total")) %>%
+  rename(TRAIT = Trait) %>%
+  mutate(TRAIT = recode(TRAIT, "CBSDRS" = "CBSDR")) %>%
+  mutate(SET = "3KDE")
+
+K3DE <- bind_rows(trans33KDE,trans63KDE, transR3KDE)
+
+# Merge everything
+transcriptomicsDE <- bind_rows(K3, WGI, K3DE)
+
+```
+
+
+```{r, fig.height=7, fig.width=15}
+
+library(ggplot2)
+library(wesanderson)
+
+#Everything$SET <- factor(Everything$SET, levels=c("QTL", "3K", "WGI"))
+#Everything$K <- factor(Everything$K, levels=c("Chr4", "Chr11", "RG", "Total"))
+
+kolor <- wes_palette(name = "Zissou")
+
+p <- ggplot(transcriptomicsDE, aes(factor(K), ACCURACIES))
+p + geom_boxplot(aes(fill = SET)) + labs(title="Is there anything anywhere else?", x="Imputation level") +  theme_bw() +
+  facet_grid(. ~ TRAIT) +
+  scale_fill_manual(values = c(kolor[5],kolor[1],kolor[3])) +
+  theme(plot.title=element_text(colour = "navyblue",face ="bold", size= 18, margin = margin(t=20, b=20)),
+        ## Boxes from the grid
+        strip.text.x=element_text(size=16, face = "bold"),
+        strip.background=element_rect(colour="black", fill=kolor[2]),
+        ##
+        axis.title.y=element_text(margin=margin(0,20,0,0)),
+        axis.text=element_text(size=15), 
+        axis.title=element_text(size=20,face="bold"),
+        axis.title.x=element_text(margin=margin(20,0,0,0))) 
+
+
+```
 
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
