@@ -254,6 +254,9 @@ p + geom_boxplot(aes(fill = SET)) + labs(title="Accounting for known QTLs", x="I
   facet_grid(. ~ TRAIT) +
   scale_fill_manual(values = c(kolor[1], "white", kolor[4])) +
   theme(plot.title=element_text(colour = "navyblue",face ="bold", size= 18, margin = margin(t=20, b=20)),
+        ## Boxes from the grid
+        strip.text.x=element_text(size=16, face = "bold"),
+        strip.background=element_rect(colour="black", fill=kolor[2]),
         axis.title.y=element_text(margin=margin(0,20,0,0)),
         axis.text=element_text(size=15), 
         axis.title=element_text(size=20,face="bold"),
@@ -359,6 +362,10 @@ p + geom_boxplot(aes(fill = SET)) + labs(title="Is there anything anywhere else?
   facet_grid(. ~ TRAIT) +
   scale_fill_manual(values = c(kolor[5],kolor[1],kolor[3])) +
   theme(plot.title=element_text(colour = "navyblue",face ="bold", size= 18, margin = margin(t=20, b=20)),
+        ## Boxes from the grid
+        strip.text.x=element_text(size=16, face = "bold"),
+        strip.background=element_rect(colour="black", fill=kolor[2]),
+        ##
         axis.title.y=element_text(margin=margin(0,20,0,0)),
         axis.text=element_text(size=15), 
         axis.title=element_text(size=20,face="bold"),
