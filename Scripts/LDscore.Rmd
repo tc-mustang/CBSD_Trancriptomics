@@ -1,0 +1,116 @@
+---
+title: "LDscore calculations"
+output: html_notebook
+---
+
+#LDscore calculations
+Controlling for LD between kernels
+
+```{r}
+
+chr1ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr1.multi_score.ld", header = TRUE, sep = " ")
+chr2ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr2.multi_score.ld", header = TRUE, sep = " ")
+chr3ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr3.multi_score.ld", header = TRUE, sep = " ")
+chr4ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr4.multi_score.ld", header = TRUE, sep = " ")
+chr5ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr5.multi_score.ld", header = TRUE, sep = " ")
+chr6ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr6.multi_score.ld", header = TRUE, sep = " ")
+chr7ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr7.multi_score.ld", header = TRUE, sep = " ")
+chr8ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr8.multi_score.ld", header = TRUE, sep = " ")
+chr9ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr9.multi_score.ld", header = TRUE, sep = " ")
+chr10ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr10.multi_score.ld", header = TRUE, sep = " ")
+chr11ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr11.multi_score.ld", header = TRUE, sep = " ")
+chr12ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr12.multi_score.ld", header = TRUE, sep = " ")
+chr13ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr13.multi_score.ld", header = TRUE, sep = " ")
+chr14ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr14.multi_score.ld", header = TRUE, sep = " ")
+chr15ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr15.multi_score.ld", header = TRUE, sep = " ")
+chr16ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr16.multi_score.ld", header = TRUE, sep = " ")
+chr17ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr17.multi_score.ld", header = TRUE, sep = " ")
+chr18ld <- read.delim("/home/DB/roberto/IMPUTE2_plink/REPS/chr18.multi_score.ld", header = TRUE, sep = " ")
+
+```
+
+
+## Check the distributions
+
+```{r}
+
+par(mfrow=c(4,5))
+hist(chr1ld[,11])
+hist(chr11ld[,5])
+hist(chr2ld[,11])
+hist(chr3ld[,11])
+hist(chr5ld[,11])
+hist(chr6ld[,11])
+hist(chr7ld[,11])
+hist(chr8ld[,11])
+hist(chr9ld[,11])
+hist(chr10ld[,11])
+hist(chr12ld[,11])
+hist(chr13ld[,11])
+hist(chr14ld[,11])
+hist(chr15ld[,11])
+hist(chr16ld[,11])
+hist(chr17ld[,11])
+hist(chr18ld[,11])
+
+
+
+```
+
+## Filter markers
+
+```{r}
+
+library(tidyr)
+library(magrittr)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(cowplot)
+
+
+EEchr <- bind_rows(chr1ld,chr2ld,chr3ld,chr5ld,chr6ld,chr7ld,chr8ld,chr9ld,chr10ld,chr12ld,chr13ld,chr14ld,chr15ld,chr16ld,chr17ld,chr18ld)
+
+par(mfrow=c(2,2))
+hist(chr4ld[,8])
+hist(chr11ld[,5])
+hist(EEchr[,11])
+
+
+```
+
+```{r}
+
+LDgenesEE <- EEchr[which(EEchr[,11] > 0.1),1]
+LDgenes04 <- chr4ld[which(chr4ld[,8] > 0.1),1]
+LDgenes11 <- chr11ld[which(chr11ld[,5] > 0.1),1]
+
+
+write.table(LDgenesEE, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/LDscore/LDsnps.EE")
+write.table(LDgenes04, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/LDscore/LDsnps.04")
+write.table(LDgenes11, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/LDscore/LDsnps.11")
+
+```
+
+
+
+```{r}
+
+#Load the required packages:
+library(rrBLUP)
+library(foreach)
+library(doParallel)
+
+# Load the cross validation code:
+source("/home/roberto/Desktop/JL-Presentation/PAG_2017/Code/GBLUP_functions.R")
+
+#Load phenotypic Data (Already Filter no missings or extras)
+CBSD_pheno <- read.delim("~/Desktop/JL-Presentation/PAG_2017/Phenotypes/Phenos.txt", stringsAsFactors = F)
+
+```
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
