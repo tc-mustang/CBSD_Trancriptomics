@@ -1,5 +1,5 @@
 ---
-title: "R Notebook"
+title: "Describing the population"
 output:
   html_document: default
   html_notebook: default
@@ -24,7 +24,7 @@ gcta64 --bfile /home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/PLINK/pl
 ```
 
   Make a plot 
-```{r, fig_height: 32, fig_width: 44}
+```{r, fig.height=3, fig.width=7}
 
 LDscore <- read.delim("/home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/PLINK/LDscore.ld", sep = " ")
 
@@ -32,6 +32,9 @@ LDscore_r <- LDscore[,-(4:7)]
 mean_LD <- LDscore[,-c(4,6:8)]
 colnames(LDscore_r) <- c("SNP","CHR", "BP", "ldscore")
 colnames(mean_LD) <- c("SNP","CHR", "BP", "ldscore")
+
+
+# Plotting total LD score not controlling for number of SNPs per window
 
 library(qqman)
 manhattan(LDscore_r, p = "ldscore", logp = FALSE, ylab = "LDscore", genomewideline = FALSE, col = c("dodgerblue4", "forestgreen"), cex=0.3,
@@ -41,6 +44,7 @@ manhattan(LDscore_r, p = "ldscore", logp = FALSE, ylab = "LDscore", genomewideli
 library(wesanderson)
 wes <- wes_palette("Zissou")
 
+# Plotting mean LD scores
 
 LDplot <- manhattan(mean_LD, p = "ldscore", logp = FALSE, ylab = "Mean LDscore", genomewideline = FALSE, col = c(wes[1], wes[4]), cex=0.2,
     suggestiveline = FALSE, main = "LDscores")
@@ -51,15 +55,13 @@ LDplot <- manhattan(mean_LD, p = "ldscore", logp = FALSE, ylab = "Mean LDscore",
 #saving the image 
 
 setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Population_Description/" )
-tiff("LDscore.tiff", width = 8.5, height = 4, units = 'in', res = 200)
+tiff("LDscore.tiff", width = 7, height = 3, units = 'in', res = 350)
 manhattan(mean_LD, p = "ldscore", logp = FALSE, ylab = "mean LDscore", genomewideline = FALSE, col = c(wes[1], wes[4]), cex=0.2,
     suggestiveline = FALSE, main = "LDscores") # Make plot
 dev.off()
 
 
 ```
-
-
 
 ### LD decay plot
 2) Usual LD decay
@@ -70,10 +72,11 @@ dev.off()
 # plink --allow-no-sex --bfile plink --r2 --maf 0.01 --out plink_ld
 # This will generate a file named plink_ld.ld in :  /home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/PLINK
 
-library(tidyr) ## re-arranging data frames.
-library(dplyr) ## fast and simple coding.
-library(car) ## recoding character variables.
-library(ggplot2) ## fancy plots.
+library(tidyr)
+library(magrittr)
+library(dplyr) 
+library(car) 
+library(ggplot2)
 
 
 theme_ld = function() {theme_bw(base_size = 10) +
@@ -122,7 +125,7 @@ ld_genome
 #saving the image 
 
 setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Population_Description/" )
-tiff("LDdecay.tiff", width = 7.5, height = 7.5, units = 'in', res = 200)
+tiff("LDdecay.tiff", width = 7, height = 6, units = 'in', res = 350)
 ld_genome
 dev.off()
 
@@ -189,7 +192,7 @@ pcaplot <- plot(tabcol$EV1, tabcol$EV2, xlab="Eigenvector 1 (4.73%)", ylab="Eige
 ```{r}
 
 setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Population_Description/" )
-tiff("PCAplot.tiff", width = 5, height = 5, units = 'in', res = 200)
+tiff("PCAplot.tiff", width = 7, height = 6, units = 'in', res = 350)
 plot(tabcol$EV1, tabcol$EV2, xlab="Eigenvector 1 (4.73%)", ylab="Eigenvector 2 (4.22%)", pch= 20, col=tabcol$ID) 
 legend("bottomright", legend=c("GWAS", "Training"), pch=19, col=c(wes[1], wes[3]))
 dev.off()
@@ -211,10 +214,11 @@ GWASfrq <- GWASfrq %>%
 
 TRAININGfrq <- read.delim("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Population_Description/TRAINING", row.names = NULL, header = T)
 
-Frq <- TRAININGfrq %>%
+TRAININGfrq <-TRAININGfrq %>%
   select(N_CHR, Training) %>%    ## Select only the useful columns.
-  rename(FREQ = N_CHR, SET = Training) %>% ## Rename the colnames
-  bind_rows(Frq, GWASfrq)
+  rename(FREQ = N_CHR, SET = Training) ## Rename the colnames
+  
+Frq <- bind_rows(TRAININGfrq, GWASfrq)
 
 
 frqgraph<- ggplot(Frq, aes(FREQ, fill = SET)) +
@@ -239,12 +243,14 @@ MAFplot <- ggplot(Frq, aes(FREQ, fill = SET)) +
    geom_density(alpha = 0.8) +
    labs(x = "Reference Allele Frequency", y = "Density")
 
+
+MAFplot
 ```
 
 ```{r}
 
 setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Population_Description/" )
-tiff("MAFplot.tiff", width = 5, height = 5, units = 'in', res = 200)
+tiff("MAFplot.tiff", width = 7, height = 6, units = 'in', res = 350)
 MAFplot
 dev.off()
 
