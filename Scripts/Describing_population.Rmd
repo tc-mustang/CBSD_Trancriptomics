@@ -47,7 +47,7 @@ wes <- wes_palette("Zissou")
 # Plotting mean LD scores
 
 LDplot <- manhattan(mean_LD, p = "ldscore", logp = FALSE, ylab = "Mean LDscore", genomewideline = FALSE, col = c(wes[1], wes[4]), cex=0.2,
-    suggestiveline = FALSE, main = "LDscores")
+    suggestiveline = FALSE, main = "LDscores",  cex.axis = 0.7, cex.lab = 0.7)
 
 ```
 
@@ -55,7 +55,7 @@ LDplot <- manhattan(mean_LD, p = "ldscore", logp = FALSE, ylab = "Mean LDscore",
 #saving the image 
 
 setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Population_Description/" )
-tiff("LDscore.tiff", width = 7, height = 3, units = 'in', res = 350)
+tiff("LDscore.tiff", width = 7, height = 4, units = 'in', res = 350)
 manhattan(mean_LD, p = "ldscore", logp = FALSE, ylab = "mean LDscore", genomewideline = FALSE, col = c(wes[1], wes[4]), cex=0.2,
     suggestiveline = FALSE, main = "LDscores") # Make plot
 dev.off()
@@ -114,7 +114,12 @@ ld_genome =
     guides(colour = guide_legend(override.aes = list(alpha = 1, size=5) , title = "Chromosome")) +
     guides(fill = guide_legend(keywidth = 3, keyheight = 1)) +
     theme_bw() +
-    theme(legend.position = "bottom") 
+    theme(legend.position = "bottom") +
+    theme(axis.text.x = element_text(size=13, color = "black"),
+          axis.text.y = element_text(size=13, color = "black"),
+          axis.title = element_text(size=13, color = "black"),
+          legend.text = element_text(size=13),
+          legend.title = element_text(size=13))
     
 
 ld_genome
@@ -241,7 +246,12 @@ MAFplot <- ggplot(Frq, aes(FREQ, fill = SET)) +
    theme(legend.position = "bottom") +
    guides(fill = guide_legend(title = NULL)) +
    geom_density(alpha = 0.8) +
-   labs(x = "Reference Allele Frequency", y = "Density")
+  labs(x = "Reference Allele Frequency", y = "Density") +
+  theme(axis.text.x = element_text(size=13, color = "black"),
+          axis.text.y = element_text(size=13, color = "black"),
+          axis.title = element_text(size=13, color = "black"),
+          legend.text = element_text(size=13),
+          legend.title = element_text(size=13))
 
 
 MAFplot
