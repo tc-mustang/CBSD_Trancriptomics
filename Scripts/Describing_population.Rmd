@@ -55,9 +55,9 @@ LDplot <- manhattan(mean_LD, p = "ldscore", logp = FALSE, ylab = "Mean LDscore",
 #saving the image 
 
 setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Population_Description/" )
-tiff("LDscore.tiff", width = 7, height = 4, units = 'in', res = 350)
+tiff("LDscore.tiff", width = 7, height = 3, units = 'in', res = 350)
 manhattan(mean_LD, p = "ldscore", logp = FALSE, ylab = "mean LDscore", genomewideline = FALSE, col = c(wes[1], wes[4]), cex=0.2,
-    suggestiveline = FALSE, main = "LDscores") # Make plot
+    suggestiveline = FALSE, main = "LDscores", cex.axis = 0.7, cex.lab = 0.7) # Make plot
 dev.off()
 
 
