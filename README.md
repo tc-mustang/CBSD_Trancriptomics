@@ -22,3 +22,8 @@ Working title:
   ### Impact_imputation_level.Rmd (R notebook)
   1) Comparison Of Genomic Prediction Accuracies when using GBS, BEAGLE and IMPUTE2 markers (Figure 3a).
   2) Comparison of Genomic Prediction Accuracies when using GBS, IMPUTE2 and subsets of IMPUTE2 markers (Figure 3b).
+  
+  ### Accounting_for_QTLs
+  1) Prediction Accuracies using two kernel GBLUP for three traits. Comparing prediction accuracies when using chromosomes known to include QTLs and random chromosomes. (Figure S4a)
+  2) Prediction Accuracies using a three kernel model. Chr4 and Chr11 (QTL + chromosomes) plus a random genetic effect representing the rest of the genome. (Figure S4b)
+  3) Figure 4
