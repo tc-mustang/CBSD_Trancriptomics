@@ -116,6 +116,12 @@ Plot the Accuracies
 
 ```{r}
 
+
+load("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level/GB_GBS.RData")
+load("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level/BEAGLEI.RData")
+load("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level/BEAGLEII.RData")
+load("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level/IMPUTE2.RData")
+
 # NEW GBS accuracies
 GBSdf <- matrix(0, nrow=75, ncol = 3) 
 colnames(GBSdf) <- c("Accuracy", "Set", "Trait")
@@ -128,12 +134,6 @@ GBSdf[26:50,3] <- "CBSD6MAP"
 GBSdf[51:75,1] <- as.numeric(GB_GBS[[3]]$accuracies[,3])
 GBSdf[51:75,2] <- "GBS"
 GBSdf[51:75,3] <- "CBSDR"
-
-# OLD GBS vector from ~/Desktop/JL-Presentation/Accuracies##
-vector <- c(0.39,0.42,0.40,0.39,0.40,0.40,0.38,0.40,0.39,0.38,0.367,0.4,0.409,0.398,0.3849,0.3865, 0.3924, 0.3973, 0.3847, 0.4132, 0.3728, 0.3818, 0.4088, 0.39,0.3831)
-GBSdf[,1] <- as.numeric(vector)
-GBSdf[,2] <- "GBS"
-GBSdf[,3] <- "NN"
 
 # BEAGLE STAGE I accuracies
 Stage1 <- matrix(0, nrow=75, ncol = 3) 
@@ -184,7 +184,7 @@ graph[,1] <- acc
 
 Loading required packages and plotting
 
-```{r}
+```{r,fig.height=5, fig.width=5}
 
 library(ggplot2)
 require(reshape2)
@@ -195,10 +195,10 @@ graph$Set <- factor(graph$Set, levels=c("GBS", "BEAGLE-1", "BEAGLE-2", "IMPUTE2"
 p <- ggplot(graph, aes(factor(Trait), Accuracy))
 p + geom_boxplot(aes(fill = Set)) + labs(title="Impact of Imputation Level on Accuracy", x="Imputation level") +  theme_bw() +
   scale_fill_manual(values = wes_palette("Zissou")) +
-  theme(plot.title=element_text(colour = "navyblue",face ="bold", size= 18, margin = margin(t=20, b=20)),
+  theme(plot.title=element_text(colour = "navyblue",face ="bold", size= 15, margin = margin(t=20, b=20)),
         axis.title.y=element_text(margin=margin(0,20,0,0)),
-        axis.text=element_text(size=15), 
-        axis.title=element_text(size=20,face="bold"),
+        axis.text=element_text(size=9), 
+        axis.title=element_text(size=12,face="bold"),
         axis.title.x=element_text(margin=margin(20,0,0,0))) 
 
 
@@ -256,6 +256,10 @@ proc.time() - proctime
 ```
 
 ```{r}
+
+load("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level/IMPUTE290.RData")
+load("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level/IMPUTE2GBS.RData")
+
 
 # NEW GBS accuracies
 GBSdf <- matrix(0, nrow=75, ncol = 3) 
@@ -319,19 +323,92 @@ graph2[,1] <- acc
 
 Graph
 
-```{r}
+```{r, fig.height=7, fig.width=10}
 
+library(wesanderson)
 graph2$Set <- factor(graph2$Set, levels=c("GBS", "IMPUTE2", "Impute2GBS", "Impute290"))
+
+kolor <- wes_palette(name = "Zissou")
+
+kolores <- wes_palette(name = "Royal1")
+
+
 
 p <- ggplot(graph2, aes(factor(Trait), Accuracy))
 p + geom_boxplot(aes(fill = Set)) + labs(title="Impact of Imputation Level on Accuracy", x="Imputation level") +  theme_bw() +
-  scale_fill_manual(values = wes_palette("Zissou")) +
+  scale_fill_manual(values = c(kolor[1],kolor[4],kolor[5],kolores[2])) +
   theme(plot.title=element_text(colour = "navyblue",face ="bold", size= 18, margin = margin(t=20, b=20)),
         axis.title.y=element_text(margin=margin(0,20,0,0)),
         axis.text=element_text(size=15), 
         axis.title=element_text(size=20,face="bold"),
         axis.title.x=element_text(margin=margin(20,0,0,0))) 
 
+
+```
+
+Saving all the GS objects:
+
+```{r}
+
+save(GB_GBS, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level/GB_GBS.RData")
+save(BEAGLEI, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level/BEAGLEI.RData")
+save(BEAGLEII, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level/BEAGLEII.RData")
+save(IMPUTE2, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level/IMPUTE2.RData")
+save(IMPUTE290, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level/IMPUTE290.RData")
+save(IMPUTE2GBS, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level/IMPUTE2GBS.RData")
+
+```
+
+
+## Both Together
+
+```{r,fig.height=3, fig.width=5}
+
+library(ggplot2)
+require(reshape2)
+library(wesanderson)
+
+graph$Set <- factor(graph$Set, levels=c("GBS", "BEAGLE-1", "BEAGLE-2", "IMPUTE2"))
+
+
+setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level" )
+tiff("Part1", width = 5, height = 3, units = 'in', res = 350)
+
+
+p <- ggplot(graph, aes(factor(Trait), Accuracy))
+p + geom_boxplot(aes(fill = Set))  +  theme_bw() +
+  scale_fill_manual(values = wes_palette("Zissou")) +
+  theme(plot.title=element_text(colour = "navyblue",face ="bold", size= 15, margin = margin(t=20, b=20)),
+        axis.title.y=element_text(margin=margin(0,20,0,0)),
+        axis.text=element_text(size=9), 
+        axis.title=element_text(size=12,face="bold"),
+        axis.title.x=element_text(margin=margin(20,0,0,0)))  + ylim(0.28, 0.46)
+
+dev.off()
+
+
+library(wesanderson)
+graph2$Set <- factor(graph2$Set, levels=c("GBS", "IMPUTE2", "Impute2GBS", "Impute290"))
+
+kolor <- wes_palette(name = "Zissou")
+
+kolores <- wes_palette(name = "Royal1")
+
+
+
+setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Impact_Imputation_level" )
+tiff("Part2", width = 5, height = 3, units = 'in', res = 350)
+
+p <- ggplot(graph2, aes(factor(Trait), Accuracy))
+p + geom_boxplot(aes(fill = Set)) +  theme_bw() +
+  scale_fill_manual(values = c(kolor[1],kolor[4],kolor[5],kolores[2])) +
+  theme(plot.title=element_text(colour = "navyblue",face ="bold", size= 15, margin = margin(t=20, b=20)),
+        axis.title.y=element_text(margin=margin(0,20,0,0)),
+        axis.text=element_text(size=9), 
+        axis.title=element_text(size=12,face="bold"),
+        axis.title.x=element_text(margin=margin(20,0,0,0))) + ylim(0.28, 0.46)
+
+dev.off()
 
 ```
 
