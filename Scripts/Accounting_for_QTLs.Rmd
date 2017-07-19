@@ -5,7 +5,7 @@ output: html_notebook
 
 # Accounting for known QTLs in predictions
 
-Using the reference chromosome 4 and chromosome 11 from kayondo et al. for foliar and chromosome 18 from Morag for roots
+Using the reference chromosome 4 and chromosome 11 from kayondo et al. for foliar symptoms
 
 
 ## Foliar QTLs (chromosome 4 and chromosome 11)
@@ -146,6 +146,11 @@ save(CBSDR, file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Accou
 Set the dataframes for GGPLOT
 
 ```{r}
+
+load(file = "/home/DB2/Imputation/IMPUTE2/PROCCESING/FILTERS/Foliar_QTLS/kernelx2")
+load(file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Accounting_for_QTL/CBSD3_random.Rdata")
+load(file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Accounting_for_QTL/CBSD6_random.Rdata")
+load(file = "/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Accounting_for_QTL/CBSDR_random.Rdata")
 
 library(tidyr)
 library(magrittr)
@@ -372,6 +377,42 @@ p + geom_boxplot(aes(fill = SET)) + labs(title="Is there anything anywhere else?
         axis.title.x=element_text(margin=margin(20,0,0,0))) 
 
 
+
+```
+
+
+### Preparing Figure 4
+
+```{r, fig.height=4, fig.width=6}
+
+library(ggplot2)
+library(wesanderson)
+
+Accounting$SET <- factor(Accounting$SET, levels=c("QTL", "Random", "WGI"))
+Accounting$K <- factor(Accounting$K, levels=c("Chr4", "Chr11", "K1", "K2", "Total"))
+
+kolor <- wes_palette(name = "Zissou")
+
+Accountinga <- filter(Accounting, TRAIT != "CBSD3")
+
+setwd("/home/roberto/Desktop/JL-Presentation/PAG_2017/Results/Accounting_for_QTL/" )
+tiff("Figure4", width = 6, height = 4, units = 'in', res = 350)
+
+p <- ggplot(Accountinga, aes(factor(K), ACCURACIES))
+p + geom_boxplot(aes(fill = SET)) + labs(x="") +  theme_bw() +
+  facet_grid(. ~ TRAIT) +
+  scale_fill_manual(values = c(kolor[1], "white", kolor[4])) +
+  theme(plot.title=element_text(colour = "navyblue",face ="bold", size= 18, margin = margin(t=20, b=20)),
+        ## Boxes from the grid
+        legend.position="bottom",
+        strip.text.x=element_text(size=10, face = "bold"),
+        strip.background=element_rect(colour="black", fill=kolor[2]),
+        axis.title.y=element_text(margin=margin(0,20,0,0)),
+        axis.text=element_text(size=10), 
+        axis.title=element_text(size=10,face="bold"),
+        axis.title.x=element_text(margin=margin(10,0,0,0))) 
+
+dev.off()
 
 ```
 
