@@ -1,0 +1,158 @@
+---
+title: "Principal Component Regressions on the phenotypes"
+output: html_notebook
+---
+
+# Check if the phenotypes are explained by the first 10 PCAs
+
+## Calculate the PCs using SNP relate
+
+```{r}
+
+library(gdsfmt)
+library(SNPRelate)
+
+bed.fn <- "/home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/PLINK/plink.bed"
+fam.fn <- "/home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/PLINK/plink.fam"
+bim.fn <- "/home/roberto/Desktop/JL-Presentation/PAG_2017/Genotypes/PLINK/plink.bim"
+
+snpgdsBED2GDS(bed.fn, fam.fn, bim.fn,out.gdsfn ="test1.gds")
+snpgdsSummary("test1.gds")
+
+genofile <- snpgdsOpen("test1.gds")
+
+pca <- snpgdsPCA(genofile, num.thread=2)
+
+PCs <- pca$eigenvect[,1:10]
+
+```
+
+## Get the phenotypes 
+
+```{r}
+
+#Load phenotypic Data (Already Filter no missings or extras)
+CBSD_pheno <- read.delim("~/Desktop/JL-Presentation/PAG_2017/Phenotypes/Phenos.txt", stringsAsFactors = F)
+
+newnames <- vector()
+for (i in 1:length(pca$sample.id)) {
+      newnames <- c(newnames, strsplit(pca$sample.id, ":")[[i]][1])
+}
+
+PCs                  <- cbind(PCs,newnames)         
+rownames(CBSD_pheno) <- CBSD_pheno[,1] 
+PC           <- as_data_frame(PCs)
+
+#PC           <- PC[,-c(12,13,14)]
+
+keep         <- (which(newnames%in%rownames(CBSD_pheno)))
+PC           <- PC[keep,]
+colnames(PC) <- c("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "CLONE")
+pnames <- PC$CLONE
+PC           <- PC[-which(duplicated(pnames)),]
+
+rownames(PC) <- PC$CLONE
+
+PCpheno <- inner_join(CBSD_pheno, PC)
+
+test <- lm(as.numeric(PCpheno$CBSD6S) ~ as.numeric(PCpheno$six))
+cd <- summary(test)
+cc <- anova(test)
+cc$`Pr(>F)`[1]
+
+```
+
+## Loop and output nicely
+
+```{r}
+
+principals <- c("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten") 
+
+
+pvalues <- vector()
+variance <- vector()
+
+for ( i in 1:10) {
+  
+  thispc <- i + 10
+  test <- lm(as.numeric(PCpheno$CBSDRS.ebv) ~ as.numeric(PCpheno[,thispc]))
+  sum <- summary(test)
+  ano <- anova(test)
+  
+  r2   <- sum$adj.r.squared 
+  pval <- ano$`Pr(>F)`[1]
+  
+  pvalues <- c(pvalues, pval)
+  variance <- c(variance, r2)
+  
+}
+
+pval3
+variance3 
+
+pval6 
+variance6 
+
+pvalr 
+variancer
+
+
+```
+
+## Put everything on dataframes 
+
+```{r}
+
+pvalmatrix <- matrix(0, nrow = 30, ncol = 3)
+pvalmatrix <- as.data.frame(pvalmatrix)
+
+colnames(pvalmatrix) <- c("pval", "PC", "Trait")
+pvalmatrix[,1] <- c(pval3, -log(pval6), -log(pvalr))
+pvalmatrix[,2] <- rep(1:10, 3)
+pvalmatrix[,3] <- c(rep("CBSD3",10), rep("CBSD6",10), rep("CBSDR",10))
+
+
+varamatrix <- matrix(0, nrow = 30, ncol = 3)
+varamatrix <- as.data.frame(varamatrix)
+
+colnames(varamatrix) <- c("r2", "PC", "Trait")
+varamatrix[,1] <- c(variance3, variance6, variancer)
+varamatrix[,2] <- rep(1:10, 3)
+varamatrix[,3] <- c(rep("CBSD3",10), rep("CBSD6",10), rep("CBSDR",10))
+
+-log(pval6)
+```
+
+
+## Plot
+
+```{r}
+
+
+library(ggplot2)
+library(wesanderson)
+
+#Everything$SET <- factor(Everything$SET, levels=c("QTL", "3K", "WGI"))
+#Everything$K <- factor(Everything$K, levels=c("Chr4", "Chr11", "RG", "Total"))
+
+
+p <- ggplot(data=pvalmatrix, aes(x=as.character(PC), y=pval, group=Trait, colour=Trait)) 
+p + geom_line() +
+    geom_point()
+
+g <- ggplot(data=varamatrix, aes(x=as.character(PC), y=r2, group=Trait, colour=Trait)) 
+g + geom_line() +
+    geom_point()
+
+
+
+
+
+
+```
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
