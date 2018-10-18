@@ -1,0 +1,72 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+source("http://bioconductor.org/biocLite.R")
+biocLite("gdsfmt")
+biocLite("SNPRelate")
+
+library(gdsfmt)
+library(SNPRelate)
+library(wesanderson)
+
+bed.fn <- "/home/gwas1/TEST.bed"
+fam.fn <- "/home/gwas1/TEST.fam"
+bim.fn <- "/home/gwas1/TEST.bim"
+
+snpgdsBED2GDS(bed.fn, fam.fn, bim.fn,out.gdsfn ="/home/DB/GWAS/test.gds")
+snpgdsSummary("/home/DB/GWAS/test.gds")
+
+genofile <- snpgdsOpen("/home/DB/GWAS/test.gds")
+
+pca <- snpgdsPCA(genofile, num.thread=1)
+
+pc.percent <- pca$varprop*100
+head(round(pc.percent, 2))
+
+tab <- data.frame(sample.id = pca$sample.id,
+    EV1 = pca$eigenvect[,1],    # the first eigenvector
+    EV2 = pca$eigenvect[,2],    # the second eigenvector
+    stringsAsFactors = FALSE)
+head(tab)
+
+wes <- wes_palette('Cavalcanti1')
+
+tabcol = tab %>%
+  mutate(ID = substr(sample.id, 1, 4)) %>%
+  mutate(EV1 = round(EV1, 3), EV2 = round(EV2, 3)) %>%
+  mutate(ID = ifelse(ID == 'UG14', wes[1], wes[3]))
+
+
+pcaplot <- plot(tabcol$EV1, tabcol$EV2, xlab="Eigenvector 1 (4.64%)", ylab="Eigenvector 2 (4.2%)", pch= 20, col=tabcol$ID) 
+legend("bottomright", legend=c("UG14", "Training"), pch=19, col=c(wes[1], wes[3]))
+
+```
+
+```{r}
+
+manhatti <- read.delim(file = "/home/gwas9/tomanhattan", header = T, sep = "\t")
+
+manhattan(manhatti, cex = 0.1)
+
+
+```
+
+
+```{r}
+
+qq(manhatti$P)
+
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
